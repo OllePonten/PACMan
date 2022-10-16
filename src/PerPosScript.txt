@@ -1,0 +1,5 @@
+Yield, 
+Select Image = ,F
+Save Tiff Image = ,{Exp}_{lbl}_T{time}_F0
+Select Image = ,Fm'
+Save Tiff Image = ,{Exp}_{lbl}_T{time}_Fm

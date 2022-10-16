@@ -1,0 +1,58 @@
+-- Program Control Commands-- 
+TimeStep(s)= [int]
+Wait(s)= [int]
+Call  
+Begin of Repetition Block  
+End of Repetition Block; Loops=  [int]
+Paste to Comment Line 
+Message=  
+Remark= [string]
+Spacer 
+Exit 
+ 
+-- General Commands -- 
+New Record 
+FvFm 
+Yield 
+Ft only 
+Abs 
+Measure= bool
+Start Light Curve 
+Start Induction Curve 
+Stop Induction Curve 
+Clock= [bool]
+Clock Time  [=,+,-] int
+Clock Mode=  [0:3]
+Load Par File=  [string]
+Load Pim File=  [string]
+Save Pim File=  [string]
+Save NIR File=  [string]
+Export to Tiff File=  [string]
+Export to CSV File=  [string]
+Export all to CSV File=  [string]
+Select Image=  [Ft,Fo,F,Fm,Fm',Fv/Fm,Y(II),Y(NPQ),Y(NO),Abs.,PS/50,NIR,NPQ/4,Red,qN,qP,qL,Inh.]
+Save Tiff Image=  [string]
+Save Jpeg Image=  [string]
+ 
+-- Actinic Light Commands -- 
+ML= [bool]
+AL= [bool]
+Ext= [bool]
+ 
+-- General Settings -- 
+Recording Mode=  [0:2]
+Set Gain=  [=,+,-] [1:20]
+Set Damping=  [=,+,-] [0:5]
+ 
+-- Light Settings -- 
+Set Meas. Light=  [=,+,-] [0:20]
+Set Meas. Freq.=  [8,4,2,1]
+Set Act. Light=  [=,+,-] [0:20]
+Set Act. Width=  [=,+,-] [0:900]
+Set Sat. Light=  [=,+,-] [1:10]
+Set Sat. Width=  [=,+,-] [4:14]
+ 
+-- Options -- 
+Mean over AOI= [bool]
+Detect by Fo= [bool]
+Show AOIs= [bool]

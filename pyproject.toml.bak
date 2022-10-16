@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=57.0",
+	"numpy",
+	"opencv-python",
+	"scipy",
+	"tiffile",
+	"scikit-image",
+	"datetime",
+	"matplotlib",
+	"comtypes",
+	"psutil",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PACMan_OllePonten"
+version = "0.9.1"
+authors = [
+  { name="Olle Pontén", email="olle.ponten@gmail.com" },
+]
+description = "PACMan: An chlorophyll-a fluorometry automation software designed for Walz (GMBH) Microscopy IPAM."
+readme = "README.md"
+license = { file="LICENSE" }
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: Microsoft :: Windows :: Windows 7",
+	"Operating System :: Microsoft :: Windows :: Windows 10"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/OllePonten/PACMan"
+"Bug Tracker" = "https://github.com/OllePonten/PACMan/issues"
