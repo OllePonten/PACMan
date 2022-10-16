@@ -1,0 +1,11 @@
+*.xlsx
+*.txt
+*.pyc
+*.tif
+Imgs/*
+!/src/*.txt
+Growth_Curve_Analysis/.Rproj.user/6BFA6BB8/sources/s-EF3C8CF5/lock_file
+*.pyc
+__pycache__/
+*.pyc
+Non-Coding/~$tometry_PacMAN (1).docx
