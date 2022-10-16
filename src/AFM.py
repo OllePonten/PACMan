@@ -449,7 +449,7 @@ class AFMan:
         if Debug:
             img_disp = np.hstack((cv2.cvtColor(img,cv2.COLOR_GRAY2BGR),cv2.cvtColor(bRectsMask * 255,cv2.COLOR_GRAY2BGR), cv2.cvtColor(maskedimg,cv2.COLOR_GRAY2BGR)))
             cv2.imshow("Maskedimg", img_disp)
-            cv2.imwrite(f"Maskedimg_{idx}.tif",img_disp)
+            #cv2.imwrite(f"Maskedimg_{idx}.tif",img_disp)
             #cv2.imwrite("..\Mask_Image.tif",img_disp)
         self.Init_Masks.append(bRectsMask)
         self.brects.append(bounding_rects)
