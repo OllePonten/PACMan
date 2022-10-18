@@ -64,7 +64,7 @@ class AIPam:
                 print("Variable error {0}:".format(err))      
                 
                 
-        def initialize_Connection(self, dyn = False):
+        def initialize_connection(self, dyn = False):
             try:
                 self.AutoIPam = ctClient.CreateObject("ImagingWin.AutoIPam", dynamic = dyn)               
                 print("Connection initialized")
@@ -84,7 +84,7 @@ class AIPam:
                 print(f"Failed to send command: {e}")
                 pass
         
-        def send_Command(self, cmd, param, Debug = False):
+        def send_command(self, cmd, param, Debug = False):
             """Sends a command to the ImagingWIN software
             Arguments:
                 - cmd - Command string corresponding to ImaginWIN script command 
@@ -96,13 +96,13 @@ class AIPam:
                 param = ctypes.c_wchar_p(param)       
             return self.AutoIPam.scriptCmd(cmd,param)
             
-        def send_core_Command(self, s,r):
+        def send_core_command(self, s,r):
             #
             s = ctypes.pointer(comtypes.BSTR(s))
             r = ctypes.pointer(comtypes.BSTR(r))
             return self.AutoIPam.scriptCmd(s,r)
         
-        def add_Command_To_Queue(self,cmd,param):
+        def add_command_to_queue(self,cmd,param):
             """Adds a command to the command queue for later execution
             Arguments:
                 - cmd - Command string corresponding to ImaginWIN script command 
@@ -113,11 +113,11 @@ class AIPam:
             #cmd: 'command ='
             #param: '=param'
             
-        def execute_Queue(self, q_Args):
+        def execute_queue(self, q_Args):
             """Execute the current command queue
             """
             if q_Args is None:
-                self.send_Command(self,"FvFm","")
+                self.send_command(self,"FvFm","")
             if q_Args[0]:
                 queue = self.Start_Command_Queue
             else:
@@ -128,13 +128,13 @@ class AIPam:
                 if(Com.cmd in str(File_Specified_Commands)):
                     Com = Com._replace(param = Com.param.format(Exp = q_Args[1],time = q_Args[2], lbl = q_Args[3]))
                     #Formats the filename correctly
-                ret = self.send_Command(Com.cmd,Com.param)
+                ret = self.send_command(Com.cmd,Com.param)
                 if(ret != 0):
                     raise Exception(f"Command {Com.cmd},{Com.param} sent to COM object returned {ret}")
             return 0
 
         
-        def print_Queue(self,strout = False):
+        def print_queue(self,strout = False):
             """Prints the current command queue. 
             Arguments:
                 - strout - If set to true the output is also returned as a list of strings.
@@ -148,22 +148,22 @@ class AIPam:
             if(strout):
                 return ret
             
-        def read_Position_Script(self, fn = 'PerPosScript.txt'):
+        def load_acquisition_script(self, fn = 'PerPosScript.txt'):
             self.Command_Queue.clear()
             with open(fn) as script_file:
                 for line in script_file:
                     read_cmd = line.split(",")
                     #If the parameter specified is a file name, we format this file name
                     #so that we get correct filenames that correspond to our repitition
-                    self.add_Command_To_Queue(read_cmd[0], read_cmd[1].rstrip())
+                    self.add_command_to_queue(read_cmd[0], read_cmd[1].rstrip())
                     if(read_cmd[0] in str(File_Specified_Commands)):
                         self.Pos_Filename = read_cmd[1].rstrip()
                         
-        def clear_Queues(self):
+        def clear_queues(self):
             self.Command_Queue.clear()
             self.Start_Command_Queue.clear()
             
-        def read_Start_Script(self, fn = 'StartPosScript.txt'):
+        def load_start_script(self, fn = 'StartPosScript.txt'):
             self.Start_Command_Queue.clear()
             with open(fn) as script_file:
                 for line in script_file:

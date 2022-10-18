@@ -43,7 +43,7 @@ class SC:
         except:
             pass
             
-    def DEBUG_LOAD_POSITIONS(self):
+    def load_pos_list_file(self):
         #Formatting pos: label,x,y,z
         fp = "Pos.txt"
         with open(fp, mode = 'r') as positions_list:
@@ -55,7 +55,7 @@ class SC:
                 pos[3] = float(pos[3])
                 self.add_pos(list(pos))
                 
-    def DEBUG_SAVE_POSITIONS(self):
+    def save_pos_list_file(self):
         fp = "Pos.txt"
         if(len(self.Pos_List) > 0):
             with open(fp,mode = 'w') as pos_file:
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     SeriIns = SC()
     
     
-def calib(SeriIns, start = 1, fin = 10,step = 1, iterations = 10):
+def calibrate(SeriIns, start = 1, fin = 10,step = 1, iterations = 10):
     failures = []
     fac = 1
     move = SeriIns.get_focus()

@@ -71,7 +71,7 @@ class PacMan:
         self.AF = True
         self.commandQueue = []
         
-    def run_Experiment(self, tk_ptr,exp_Settings , Debug = True):
+    def run_experiment(self, tk_ptr,exp_Settings , Debug = True):
         """
         
 
@@ -98,9 +98,9 @@ class PacMan:
         #The call is found in pacmangui.py
         gui_ptr = tk_ptr
         gui_ptr.msg_box("Reminder!","Did you remember to turn off the microscope light?")
-        experiment_Name = exp_Settings[0]
-        experiment = experiment_Name
-        experiment_Iterations = exp_Settings[1]
+        experiment_name = exp_Settings[0]
+        experiment = experiment_name
+        experiment_iterations = exp_Settings[1]
         experiment_Intervall = exp_Settings[2]
         temp_sep = exp_Settings[3]
         self.cancel_flag = False
@@ -108,16 +108,16 @@ class PacMan:
         self.dark_adapt_Flag = exp_Settings[5]
         self.log_Positions_flag = exp_Settings[6]
         #Create a list of lists with one lit for every repetition done.
-        for i in range(experiment_Iterations):
+        for i in range(experiment_iterations):
             self.commandQueue.append([])
-        logmsg(f"Started Experiment: {experiment_Name}", True)
-        logmsg(f"Settings: Iterations: {experiment_Iterations} Intervall(s): {experiment_Intervall}. Temporal separation(s): {temp_sep}. Dark adaption: {self.dark_adapt_Flag}" ,True)    
+        logmsg(f"Started Experiment: {experiment_name}", True)
+        logmsg(f"Settings: Iterations: {experiment_iterations} Intervall(s): {experiment_Intervall}. Temporal separation(s): {temp_sep}. Dark adaption: {self.dark_adapt_Flag}" ,True)    
         if(self.AF):
-            self.AutoFocuser = AFM.AFMan(experiment_Iterations,self.StageCom.get_pos_list_length(), self.AF,True,True)
+            self.AutoFocuser = AFM.AFMan(experiment_iterations,self.StageCom.get_pos_list_length(), self.AF,True,True)
             pacmangui.load_AF()
             logmsg(self.AutoFocuser.GUIGetParams(),True)
         if(self.dark_adapt_Flag):
-            self.IPam.send_Command('ML','Off')
+            self.IPam.send_command('ML','Off')
             logmsg("Dark adapting for 30 minutes")
             self.waiting(1800)
         logmsg(self.StageCom.retrieve_pos_list(),True)
@@ -126,16 +126,16 @@ class PacMan:
                 print(f"Scheduled commands to run at iteration {i}")
                 for com in iteration:
                     print(com)
-        self.IPam.send_Command('ML','On')
+        self.IPam.send_command('ML','On')
         if(not self.cancel_flag):
-            self.executeAcquisition(temp_Sep = temp_sep, script_Args = [True, experiment_Name,0])
+            self.execute_acquisition(temp_Sep = temp_sep, script_Args = [True, experiment_name,0])
         #Compute initial setup.
         if(self.AF):
-            self.AutoFocuser.computeInitialSetup(self.makeInitialImgs(experiment_Name),True)
+            self.AutoFocuser.compute_initial_setup(self.save_initial_imgs(experiment_name),True)
         logmsg("Starting up first wait intervall after initial imgs.")
-        self.IPam.send_Command('ML','Off')
+        self.IPam.send_command('ML','Off')
         self.waiting(intervall = experiment_Intervall)
-        for Current_Iteration in range(experiment_Iterations): 
+        for Current_Iteration in range(experiment_iterations): 
             if(not self.cancel_flag):
                 if(len(self.commandQueue[Current_Iteration])>0):
                     for com in self.commandQueue[Current_Iteration]:
@@ -146,25 +146,25 @@ class PacMan:
                         elif("IterSep" in com[0]):
                             logmsg(f"Changing iteration wait time to: {com[1]} seconds",True)
                             experiment_Intervall = int(com[1])
-                        print(self.IPam.send_Command(com[0], com[1]))
-                self.IPam.send_Command('ML','On')
+                        print(self.IPam.send_command(com[0], com[1]))
+                self.IPam.send_command('ML','On')
                 self.waiting(5)
-                logmsg(f"Running repetition number: {Current_Iteration+1}/{experiment_Iterations}", True)
-                self.IPam.send_Command("New Record","")
-                self.executeAcquisition(temp_Sep = temp_sep, script_Args = [False,experiment_Name,Current_Iteration])
+                logmsg(f"Running repetition number: {Current_Iteration+1}/{experiment_iterations}", True)
+                self.IPam.send_command("New Record","")
+                self.execute_acquisition(temp_Sep = temp_sep, script_Args = [False,experiment_name,Current_Iteration])
                 logmsg(f"Successfully completed acquisiton, now waiting for {experiment_Intervall} s", True)
-                self.reorderIterImages(experiment_Name, Current_Iteration)
+                self.reorder_iteration_images(experiment_name, Current_Iteration)
                 starttime = int(round(time.time()))
                 #Update progress bar
-                progress = round((float(Current_Iteration)/float(experiment_Iterations))*100,2)
+                progress = round((float(Current_Iteration)/float(experiment_iterations))*100,2)
                 tk_ptr.Exp_Progress['value'] = progress
                 #Wait until we are done, keeping the GUI active
-                #self.IPam.send_Command('ML','Off')
+                #self.IPam.send_command('ML','Off')
                 self.waiting(intervall = experiment_Intervall, starttime = starttime)
             else:
                 #Handle cancellation
                 logmsg("Experiment cancelled",True)
-                self.IPam.send_Command('ML','Off')
+                self.IPam.send_command('ML','Off')
                 #self.StageCom.clear_pos_list()
                 self.commandQueue.clear()
                 tk_ptr.cancel_exp()
@@ -172,7 +172,7 @@ class PacMan:
         logmsg("Experiment complete",True)
         self.StageCom.prior_command("SERVO,0")
 
-    def executeAcquisition(self, script_Args, temp_Sep = 0, printLog = True):
+    def execute_acquisition(self, script_Args, temp_Sep = 0, printLog = True):
         """
         Performs movement over the position list, running the defined
         position script at each position in the list
@@ -253,7 +253,7 @@ class PacMan:
             try:
                 time.sleep(6.5)
                 iter_Positions[pos_idx] = SC.get_current_position(True)
-                rc = IPRH.execute_Queue(script_Args + [pos_lbl])
+                rc = IPRH.execute_queue(script_Args + [pos_lbl])
             except Exception as e:
                 logmsg(f"Unkown exception occured while trying to run position script, {e}",True)
             else:
@@ -304,7 +304,7 @@ class PacMan:
                 return False
         return True
 
-    def reorderIterImages(self,exp_name, itr_no):
+    def reorder_iteration_images(self,exp_name, itr_no):
         """
         
 
@@ -344,7 +344,7 @@ class PacMan:
         # del f_img, pos_itr_imgs
         # return itr_imgs
        
-    def makeInitialImgs(self,exp_name):
+    def save_initial_imgs(self,exp_name):
         lbls = self.StageCom.get_pos_lbls()
         startimgs = []
         for pos in range(self.StageCom.get_pos_list_length()):
@@ -355,7 +355,7 @@ class PacMan:
             startimgs.append(pos_img[0])
         return startimgs
     
-    def getLatestImages(self,Fo = False, Fm = True):
+    def get_lates_images(self,Fo = False, Fm = True):
         lbls = self.StageCom.get_pos_lbls()
         Curimgs = []
         for pos in range(self.StageCom.get_pos_list_Length()):
@@ -368,14 +368,14 @@ class PacMan:
                 Curimgs.append(pos_img[-1])
         return Curimgs
         
-    def sel_exp_dir(self, fp):
+    def select_exp_dir(self, fp):
         self.Experiment_Dir = fp
         
     def set_start_script(self, fp):
-        self.IPam.read_Start_Script(fp)
+        self.IPam.load_start_script(fp)
         
     def set_pos_script(self,fp):
-        self.IPam.read_Position_Script(fp)
+        self.IPam.load_acquisition_script(fp)
         
     def add_position(self, pos):
        SCM.add_pos(pos)

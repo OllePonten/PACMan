@@ -104,12 +104,12 @@ class AFMan:
             parameters[7] = 1
             #Min dist between cells before they are merged
             parameters[8] = MINCELLDISTANCE
-        self.setParams(parameters)
+        self.set_parameters(parameters)
         #return (f"Size range: {parameters[2]}-{parameters[3]}. Min circ: {parameters[4]}. Min inertia: {parameters[6]}")
     
     
     
-    def performAutofocus(self, IPAM, iteration, position, Debug = False):
+    def do_autofocus(self, IPAM, iteration, position, Debug = False):
         """
         Calculates the difference in Z for current position/iteration. 
 
@@ -133,11 +133,11 @@ class AFMan:
         dZ = 0
         if(self.AFOn):
             #Prepare image
-            img = self.prepareImage(IPAM, Debug)
+            img = self.prepare_image(IPAM, Debug)
             cur_FS = 0
             #Compute focus score
             try:
-                FComps = self.computeFocusScoreComps(img*self.Init_Masks[position], self.brects[position],Debug)
+                FComps = self.compute_focus_score_components(img*self.Init_Masks[position], self.brects[position],Debug)
             except ZeroDivisionError:
                 cur_FS = 0
                 FComps = self.FSComponents[0,0]
@@ -157,13 +157,13 @@ class AFMan:
             #Calculate movement needed
             dZ = 0
             if(iteration != 0):             
-                dZ = self.computeCorrection(cur_FS, FComps[0], iteration, position, Debug)
+                dZ = self.compute_correction(cur_FS, FComps[0], iteration, position, Debug)
                 self.corrections[iteration][position] = dZ
             #Store and return that value   
         return dZ
         
 
-    def computeInitialSetup(self, Imgs, Debug = False):
+    def compute_initial_setup(self, Imgs, Debug = False):
         """
         Calculates focus score of a set of initial images. Should be Fm and F0 images. 
 
@@ -184,11 +184,11 @@ class AFMan:
         #Set of Fm images for mask creation
         #Set of F0 images to calculate on
         for idx, init_img in enumerate(Imgs):
-            prep_img = self.prepareImage(init_img, Debug)
-            mask_img,b_rects = self.makeInitialMask(idx,prep_img, Debug)
+            prep_img = self.prepare_image(init_img, Debug)
+            mask_img,b_rects = self.make_initial_mask(idx,prep_img, Debug)
             init_FS = 0
             try:
-                FComps = self.computeFocusScoreComps(prep_img * self.Init_Masks[idx], b_rects, True)
+                FComps = self.compute_focus_score_components(prep_img * self.Init_Masks[idx], b_rects, True)
                 #Assume laplcian first is always best
                 self.FSComponents[0,idx] = FComps[0:3]
                 if(self.Use_PLLS):
@@ -203,7 +203,7 @@ class AFMan:
             self.FSComponents[0,idx] = FComps
             self.FS[0,idx] = init_FS
         
-    def computeFocusScoreComps(self, IMG, rects = [], Debug = False):
+    def compute_focus_score_components(self, IMG, rects = [], Debug = False):
         """
         Computes the major focus score components.
 
@@ -242,7 +242,7 @@ class AFMan:
         
     #Partial image focus metrics
         conts, hierarchy = cv2.findContours(IMG, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)  
-        particles = self.fillParts(IMG, conts)
+        particles = self.fill_particles(IMG, conts)
         n_p = len(particles)
         avg_circ = avg_inertia = avg_scaled_direction = avg_theta = PARatio =  0.0
         if( n_p == 0):      
@@ -281,7 +281,7 @@ class AFMan:
     
     
         
-    def computeCorrection(self,FMS, avg_theta, iteration,position, Debug = False):
+    def compute_correction(self,FMS, avg_theta, iteration,position, Debug = False):
         """
         
 
@@ -330,7 +330,7 @@ class AFMan:
             PacMan.logmsg(msg,True)
         return round(dz,2)
 
-    def fillParts(self,img, conts):
+    def fill_particles(self,img, conts):
         Parts = []
         import ipdb
         for contourIdx, cnt in enumerate(conts):
@@ -357,12 +357,12 @@ class AFMan:
                 
             
             if(len(Parts) >= 30):
-                del(Parts[self.worstPart(Parts)])
+                del(Parts[self.worst_part(Parts)])
             Parts.append(center)   
         return Parts
 
     
-    def worstPart(self,parts):
+    def worst_part(self,parts):
         targetidx = 0
         #Remove particles that are 2 metrics lower
         for idx, part in enumerate(parts):
@@ -371,12 +371,12 @@ class AFMan:
         return targetidx
         
 
-    def prepareImage(self, src, Debug = False):
+    def prepare_image(self, src, Debug = False):
         if(isinstance(src, IRHM.AIPam)):
-            src.send_Command("Select Image = ", "Ft")
+            src.send_command("Select Image = ", "Ft")
             time.sleep(8)
-            src.send_Command("Ft only","")
-            src.send_Command("Save Tiff Image = ", "FocusImg")
+            src.send_command("Ft only","")
+            src.send_command("Save Tiff Image = ", "FocusImg")
             time.sleep(0.5)
             img = cv2.imread(IWE_fp + "\FocusImg.Tif",cv2.IMREAD_GRAYSCALE)
         else:
@@ -401,7 +401,7 @@ class AFMan:
         self.img = img
         return img
     
-    def makeInitialMask(self, idx, img = None, Debug = False):
+    def make_initial_mask(self, idx, img = None, Debug = False):
         """
         
 
@@ -455,7 +455,7 @@ class AFMan:
         self.brects.append(bounding_rects)
         return bRectsMask, bounding_rects
 
-    def setParams(self, parameters):
+    def set_parameters(self, parameters):
         self.params = cv2.SimpleBlobDetector_Params()
         # Change thresholds
         self.params.minThreshold = parameters[0]
@@ -482,7 +482,7 @@ class AFMan:
         
         self.params.filterByColor = False
         
-    def GUISetParams(self,params):
+    def GUI_set_parameters(self,params):
         global dZMIN, Strength, MINSIZE, MAXSIZE, MININERTIA, MINCIRC
         dZMIN = params[0]
         Strength = params[1]
@@ -496,10 +496,10 @@ class AFMan:
         self.params.maxArea = params[5]
         MAXSIZE = params[5]
     
-    def GUIGetParams(self):
+    def GUI_get_parameters(self):
         return [dZMIN,Strength,MINCIRC,MININERTIA,MINSIZE,MAXSIZE]
         
-    def GUILoadParams(self,fp = "PAC_settings.txt"):
+    def GUI_load_parameters(self,fp = "PAC_settings.txt"):
         """
         Loads in AFM parameters from a settings file.
 
@@ -543,10 +543,10 @@ class AFMan:
         PLLSWeight  = 1
         
         temp_AFMan = AFMan(11,1,True,useLPL,usePLLS,None,startStrength)
-        PFImg = self.prepareImage(IPAM)
-        temp_AFMan.computeInitialSetup(PFImg)
+        PFImg = self.prepare_image(IPAM)
+        temp_AFMan.compute_initial_setup(PFImg)
         
-        cRange,aRange,FSI = self.takeZStack(IPAM,SCMH,calibrationDistance)
+        cRange,aRange,FSI = self.make_Z_image_stack(IPAM,SCMH,calibrationDistance)
         
         fig,ax = plt.figure()
         fig.set_title("Autofocus Scoring")
@@ -559,7 +559,7 @@ class AFMan:
         
         while(error>tolerance):
             for idx, img in enumerate(FSI):
-                temp_AFMan.performAutofocus(img, idx+1, 0, True)
+                temp_AFMan.do_autofocus(img, idx+1, 0, True)
                 
             dZFig,dzAX = plt.figure()
             dZFig.set_title("Autofocus Scoring")
@@ -587,7 +587,7 @@ class AFMan:
         
         return strength
         
-    def takeZStack(self,IPAM,SCMH,calibrationDistance):
+    def make_Z_image_stack(self,IPAM,SCMH,calibrationDistance):
         calibrationRange = np.arange(-calibrationDistance,calibrationDistance+1,int(calibrationDistance/5))
         actualRange = []
         for position in calibrationRange:
@@ -599,20 +599,20 @@ class AFMan:
             print(f"Taking image at {position} ")
             actualRange.append(foc)          
             time.sleep(7)
-            IPAM.send_Command("Select Image = ", "Ft")
-            IPAM.send_Command("Ft only","")
-            IPAM.send_Command("Save Tiff Image = ", f"FocusImg{position}")
+            IPAM.send_command("Select Image = ", "Ft")
+            IPAM.send_command("Ft only","")
+            IPAM.send_command("Save Tiff Image = ", f"FocusImg{position}")
         focusStackCollection = skimage.io.imread_collection(IWE_fp+"\\FocusImg*",plugin = 'tifffile')
         focusStackImages = focusStackCollection.concatenate()
         return calibrationRange,actualRange,focusStackImages  
         
-    def reset_AFMan(self,initImg):
+    def reset_AF_manager(self,initImg):
         self.FSComponents = np.zeros(shape = (self.iterations,self.positions,3))
         self.FS = np.zeros(shape = (self.iterations,self.positions))
         self.brects = []
         self.Init_Masks = []
         self.corrections = np.zeros(shape = (self.iterations,self.positions))
-        self.computeInitialSetup(initImg)
+        self.compute_initial_setup(initImg)
     
 #Takes grayscale imgs
 def calculate_power_spectrum(image):

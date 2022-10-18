@@ -177,7 +177,7 @@ class SC:
         """
         outstr = []
         if(len(self.Pos_List) < 0):
-            self.DEBUG_LOAD_POSITIONS()
+            self.load_pos_list_file()
         for pos in self.Pos_List:
             outstr.append(f"{pos}")
             #print(f)
@@ -536,7 +536,7 @@ class SC:
         except:
             pass
             
-    def DEBUG_LOAD_POSITIONS(self, fp = None):
+    def load_pos_list_file(self, fp = None):
         #Formatting pos: label,x,y,z
         if(fp == None or fp == ""):
             fp = "Pos.txt"
@@ -552,7 +552,7 @@ class SC:
         except:
             print(f"Couldn't load position, likely bad filename: {fp}")
                 
-    def DEBUG_SAVE_POSITIONS(self,fp = None):
+    def save_pos_list_file(self,fp = None):
         if(fp == None or fp == ""):
             fp = "Pos.txt"
         if(len(self.Pos_List) > 0):
@@ -586,7 +586,7 @@ def disconnect():
     ser.close()
 
 
-def calib(SeriIns, start = 1, fin = 10,step = 1, iterations = 10):
+def calibrate(SeriIns, start = 1, fin = 10,step = 1, iterations = 10):
     """
     Tests the z-movement of the stage
 
@@ -680,13 +680,14 @@ def make_z_stack(step=1, extent = 10):
             os.remove(fp)
         else:
             print(f"File at {fp} not found")
+        
             
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import SCM
     moves= []
     SeriIns = SC()
-    moves[0],moves[1] = SCM.calib()
+    moves[0],moves[1] = SCM.calibrate()
     plt.scatter(moves[0],moves[1])
     plt.xlabel("Planned move (um)")
     plt.ylabel("Measured move (um)")

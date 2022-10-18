@@ -75,9 +75,9 @@ def make_z_stack(step=1, extent = 10):
     SeriC = SeriCom.SC()
     IWE_fp = 'C:\ImagingPamGigE\Data_RGB'
     SeriC.msg_resp("PZ 0")
-    IPAMC.send_Command("Select Image = ", "Ft")
-    IPAMC.send_Command("Ft only","")
-    IPAMC.send_Command("Save Tiff Image = ", "FocusImg0")
+    IPAMC.send_command("Select Image = ", "Ft")
+    IPAMC.send_command("Ft only","")
+    IPAMC.send_command("Save Tiff Image = ", "FocusImg0")
     Positions = [0]
     for fac in range(-1,2,2):
         for i in range(1,extent+1,step):            
@@ -87,9 +87,9 @@ def make_z_stack(step=1, extent = 10):
             print(f"Position: {foc}\n")
             Positions.append(foc)          
             time.sleep(8)
-            IPAMC.send_Command("Select Image = ", "Ft")
-            IPAMC.send_Command("Ft only","")
-            IPAMC.send_Command("Save Tiff Image = ", f"FocusImg{i*fac}")
+            IPAMC.send_command("Select Image = ", "Ft")
+            IPAMC.send_command("Ft only","")
+            IPAMC.send_command("Save Tiff Image = ", f"FocusImg{i*fac}")
             SeriC.go_to_z(i*fac)
             time.sleep(2.5)
             SeriC.go_to_z(i*fac)
@@ -200,9 +200,9 @@ def single_pos_Autofocus(IPAM, InitImg, factor, AF = None):
     import IPAMRH
     IWE_fp = "C:/"
     IPAMR = IPAMRH.AIPam()
-    IPAMR.send_Command("Ft only","")
-    IPAMR.send_Command("Select Image", "Ft")
-    IPAMR.send_Command("Save Tiff Image = ", "FocusImg")
+    IPAMR.send_command("Ft only","")
+    IPAMR.send_command("Select Image", "Ft")
+    IPAMR.send_command("Save Tiff Image = ", "FocusImg")
     #imgsrc = cv2.imread("FocusImg.tif", cv2.IMREAD_GRAYSCALE)
     imgsrc=cv2.imread(IWE_fp+"\FocusImg.tif",cv2.IMREAD_GRAYSCALE)
     #single_pos_Autofocus(IPAMR,imgsrc,1)

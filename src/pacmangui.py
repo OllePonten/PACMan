@@ -23,27 +23,27 @@ import PacMan, SCM
 import tkinter.messagebox
 global ImagingWinPath
 ImagingWinPath = "C:/ImagingPamGigE/Data_RGB/"
-global Int_Var, Rep_Var, Temp_Sep_Var, Pos_Var
+global int_var, rep_var, temp_sep_var, pos_var
 global val, root, top, PacManHndl
 
 import ipdb
 
 
-def set_Tk_var():
-    global Int_Var, Rep_Var, Temp_Sep_Var, Pos_Var
-    Int_Var = tk.IntVar()
-    Rep_Var = tk.IntVar()
-    Pos_Var = tk.StringVar()
-    Temp_Sep_Var = tk.IntVar()
+def set_tk_var():
+    global int_var, rep_var, temp_sep_var, pos_var
+    int_var = tk.IntVar()
+    rep_var = tk.IntVar()
+    pos_var = tk.StringVar()
+    temp_sep_var = tk.IntVar()
 
 def start():
     PCM = PacMan.PacMan()
     vp_start_gui(PCM)
-    PCM.IPam.read_Position_Script()
-    PCM.IPam.read_Start_Script()
+    PCM.IPam.load_acquisition_script()
+    PCM.IPam.load_start_script()
     root.mainloop()  
 
-def debugstart():
+def debug_start():
     vp_start_gui(1)
     root.mainloop()
     
@@ -54,7 +54,7 @@ def vp_start_gui(PCMHndl):
     root = tk.Tk()
     #Hide root window
     root.withdraw()
-    set_Tk_var()
+    set_tk_var()
     top = MainWnd (root,PMH = PCMHndl)
     #Ensure root window gets destroyed if top window gets closed
     top.protocol("WM_DELETE_WINDOW", destroy_window)
@@ -73,7 +73,7 @@ def load_AF():
         minCirc = float(window.minCirc_ent.get())
         minInert = float(window.minInert_ent.get())
         sizes = window.size_ent.get().split(',')
-        PacManHndl.AutoFocuser.GUI_set_Params([Threshold,Strength,minCirc,minInert,int(sizes[0]),int(sizes[1])])
+        PacManHndl.AutoFocuser.GUI_set_parameters([Threshold,Strength,minCirc,minInert,int(sizes[0]),int(sizes[1])])
         PacMan.logmsg(f"Autofocus parameters changed to: {[Threshold,Strength,minCirc,minInert,int(sizes[0]),int(sizes[1])]}")
     except:
         print("One of the autofocus value was not correctly formmated")
@@ -83,50 +83,50 @@ def save_pos_list():
     
     try:
 
-        PacManHndl.StageCom.DEBUG_SAVE_POSITIONS(ImagingWinPath+window.Pos_list_ent.get())
+        PacManHndl.StageCom.save_pos_list_file(ImagingWinPath+window.pos_list_ent.get())
     except Exception as e:
-        exception_Handler(e)
+        exception_handler(e)
         
 def load_pos_list():
     print("Load pos list pressed")
     try:
-        PacManHndl.StageCom.DEBUG_LOAD_POSITIONS(ImagingWinPath+window.Pos_list_ent.get())
+        PacManHndl.StageCom.load_pos_list_file(ImagingWinPath+window.pos_list_ent.get())
         update_pos_list()
     except Exception as e:
-        exception_Handler(e)
+        exception_handler(e)
 
 def rld_ipam():
     print("Reload IPAM button pressed")
     try:
-        PacManHndl.IPam.initialize_Connection()
+        PacManHndl.IPam.initialize_connection()
     except Exception as e:
-        exception_Handler(e)
+        exception_handler(e)
 
 def rld_mm():
     print("Reload mm button pressed")
     try:
         PacManHndl.PMCom.reinit()
     except Exception as e:
-        exception_Handler(e)
+        exception_handler(e)
 
 def rld_pos():
     print('Reload pos list button pressed')
     try:
-        PacManHndl.StageCom.DEBUG_LOAD_POSITIONS()
+        PacManHndl.StageCom.load_pos_list_file()
         for i in range(len(PacManHndl.StageCom.Pos_List)):
             showvar = PacManHndl.StageCom.get_pos(i)
             formstring = f"{showvar[1]} \t {showvar[0]}"
             window.pos_list.insert(tk.END,formstring)
-        window.Pos_name_var.set(f"Pos{PacManHndl.StageCom.get_pos_list_length()}")
+        window.pos_name_var.set(f"Pos{PacManHndl.StageCom.get_pos_list_length()}")
     except Exception as e:
-        exception_Handler(e)
+        exception_handler(e)
 
 def rld_start():
     print("Reload start script button pressed")
     try:
-        PacManHndl.IPam.read_Start_Script()
+        PacManHndl.IPam.load_start_script()
     except Exception as e:
-        exception_Handler(e)
+        exception_handler(e)
 
 def send_serial_command():
    msg = window.ser_com_ent.get()
@@ -143,7 +143,7 @@ def send_serial_command():
            PacMan.logmsg(f"Queing following command:{timer_cmd[1]}, {timer_cmd[2]} to repetition {timer_cmd[0]}")
            PacManHndl.add_command(int(timer_cmd[0]), timer_cmd[1:3])
        except Exception as e:
-           exception_Handler(e)
+           exception_handler(e)
    elif("IPAM:" in msg[0:6]):
        print(f"Sending Manual IPAM Command:{msg[5:]}")
        IPAM_Cmd = msg[5:].split(",")
@@ -155,7 +155,7 @@ def send_serial_command():
        try:
            PacMan.logmsg(PacManHndl.StageCom.msg_resp(prior_cmd))
        except Exception as e:
-           exception_Handler(e)
+           exception_handler(e)
 
 def update_pos_list():
     if(PacManHndl.StageCom.get_pos_list_length()>0):
@@ -165,15 +165,15 @@ def update_pos_list():
                 formstring = f"{pos[0]} \t {pos[1]}"
                 window.pos_list.insert(tk.END,formstring)
         except Exception as e:
-            exception_Handler(e)
+            exception_handler(e)
 
 def add_offset(index):
     try:
         print(index)
-        PacManHndl.StageCom.add_offset(index[0], str(window.Pos_name_var.get()))
+        PacManHndl.StageCom.add_offset(index[0], str(window.pos_name_var.get()))
         update_pos_list()
     except Exception as e:
-        exception_Handler(e)
+        exception_handler(e)
             
 def goto_sel_pos(index):
     print("Go to pos button pressed")
@@ -181,7 +181,7 @@ def goto_sel_pos(index):
         index = int(index[0])
         PacManHndl.StageCom.go_to_position(index)
     except Exception as e:
-        exception_Handler(e)
+        exception_handler(e)
         
 def del_pos(index):
     try:
@@ -189,44 +189,44 @@ def del_pos(index):
         PacManHndl.StageCom.remove_pos(index[0])
         update_pos_list()
     except Exception as e:
-        exception_Handler(f"Something went wrong when trying to delete a position. {e}")
+        exception_handler(f"Something went wrong when trying to delete a position. \n{e}")
 
 def add_pos():
     try:
-        PacManHndl.StageCom.add_pos(window.Pos_name_var.get())
+        PacManHndl.StageCom.add_pos(window.pos_name_var.get())
         showvar = PacManHndl.StageCom.get_pos(-1)
         formstring = f"{showvar[1]} \t {showvar[0]}"
         window.pos_list.insert(tk.END,formstring)
     except Exception as e:
-        exception_Handler(e)
-    window.Pos_name_var.set(f"Pos{PacManHndl.StageCom.get_pos_list_length()}")
+        exception_handler(e)
+    window.pos_name_var.set(f"Pos{PacManHndl.StageCom.get_pos_list_length()}")
 
 def run_pos():
     print("Run position button pressed")
     try:
-        PacManHndl.IPam.execute_Queue([False, 'Pytest',0,0])
+        PacManHndl.IPam.execute_queue([False, 'Pytest',0,0])
     except Exception as e:
-        exception_Handler(e)
+        exception_handler(e)
 
 def run_start():
     print("Run start script pressed")
     try:      
-        name = window.Pos_name_var.get()
-        PacManHndl.IPam.execute_Queue([True, f"{name}",0,0])
+        name = window.pos_name_var.get()
+        PacManHndl.IPam.execute_queue([True, f"{name}",0,0])
     except Exception as e:
-        exception_Handler(e)
+        exception_handler(e)
 
 def snap_img():
     print("Yield button pressed")
     try:
         PacManHndl.IPam.send_Command('Yield','')
     except Exception as e:
-        exception_Handler(e)
+        exception_handler(e)
 
 def run_exp():
     window.run_exp()
     
-def exception_Handler(exc):
+def exception_handler(exc):
     tb = exc.__traceback__
     msg = ""
     while(tb):
@@ -238,7 +238,7 @@ def exception_Handler(exc):
 
 class MainWnd(tk.Toplevel):
     def __init__(self, root=None, master = None, PMH = None):
-        global Int_Var, Rep_Var, Pos_Var
+        global int_var, rep_var, pos_var
         global window, PacManHndl
         self.master = master
         tk.Toplevel.__init__(self)
@@ -263,7 +263,6 @@ class MainWnd(tk.Toplevel):
             [('selected', _compcolor), ('active',_ana2color)])
         
         
-
         top.geometry("600x280+550+200")
         top.minsize(120, 1)
         top.maxsize(3844, 1064)
@@ -274,34 +273,34 @@ class MainWnd(tk.Toplevel):
         top.configure(highlightcolor="black")
 
         self.tabControl = ttk.Notebook(top)
-        self.Main_tab = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.Main_tab,text="Main")
-        self.Autofocus_tab = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.Autofocus_tab, text = "Autofocus")
-        self.Positions_tab = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.Positions_tab, text = "Positions")
+        self.main_tab = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.main_tab,text="Main")
+        self.autofocus_tab = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.autofocus_tab, text = "Autofocus")
+        self.positions_tab = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.positions_tab, text = "Positions")
         
         #Style for all frames
         s = ttk.Style(top)
         s.configure('TFrame', background="#d9d9d9", highlightbackground="#d9d9d9",highlightcolor="black")
         
-        self.Action_frm = ttk.Frame(self.Main_tab)
-        self.Action_frm.place(relx=0.02, rely=0.05, relheight=0.650
+        self.action_frame = ttk.Frame(self.main_tab)
+        self.action_frame.place(relx=0.02, rely=0.05, relheight=0.650
                 , relwidth=0.549)
-        self.Action_frm.configure(relief='groove')
-        self.Action_frm.configure(borderwidth="2")
-        self.Action_frm.configure(relief="groove")
-        #self.Action_frm.configure(background="#d9d9d9")
-        #self.Action_frm.configure(highlightbackground="#d9d9d9")
-        #self.Action_frm.configure(highlightcolor="black")
+        self.action_frame.configure(relief='groove')
+        self.action_frame.configure(borderwidth="2")
+        self.action_frame.configure(relief="groove")
+        #self.action_frame.configure(background="#d9d9d9")
+        #self.action_frame.configure(highlightbackground="#d9d9d9")
+        #self.action_frame.configure(highlightcolor="black")
 
 
-        self.AF_frm = ttk.Frame(self.Autofocus_tab)
-        self.AF_frm.place(relx=0.02, rely=0.05, relheight=0.650
+        self.autofocus_frame = ttk.Frame(self.autofocus_tab)
+        self.autofocus_frame.place(relx=0.02, rely=0.05, relheight=0.650
                 , relwidth=0.9)
-        self.AF_frm.configure(relief='groove')
-        self.AF_frm.configure(borderwidth="2")
-        self.AF_frm.configure(relief="groove")
+        self.autofocus_frame.configure(relief='groove')
+        self.autofocus_frame.configure(borderwidth="2")
+        self.autofocus_frame.configure(relief="groove")
         #Not operational
         self.tabControl.tab(1,state="normal")
         
@@ -311,10 +310,10 @@ class MainWnd(tk.Toplevel):
 
         baserely = 0.7
         baserelx = 0.45
-        self.pos_list = tk.Listbox(self.Positions_tab, selectmode='SINGLE')
+        self.pos_list = tk.Listbox(self.positions_tab, selectmode='SINGLE')
         self.pos_list.place(relx = baserelx, rely = 0.08, relheight = 0.6, width = 300)
         
-        self.pos_lbl = tk.Label(self.Positions_tab, anchor = 'w')
+        self.pos_lbl = tk.Label(self.positions_tab, anchor = 'w')
         self.pos_lbl.place(relx=baserelx, rely=0, height=20, width=300)
         self.pos_lbl.configure(bg="#f9f9f9")
         self.pos_lbl.configure(fg="black")
@@ -325,7 +324,7 @@ class MainWnd(tk.Toplevel):
         # self.pos_lbl.configure(highlightcolor="black")
         self.pos_lbl.configure(text ="X:      Y:      Z:      Name: ")
         
-        self.go_to_btn = tk.Button(self.Positions_tab)
+        self.go_to_btn = tk.Button(self.positions_tab)
         self.go_to_btn.place(relx=0.25, rely=0.6, height=24, width=80)
         self.go_to_btn.configure(activebackground="#ececec")
         self.go_to_btn.configure(activeforeground="#000000")
@@ -338,7 +337,7 @@ class MainWnd(tk.Toplevel):
         self.go_to_btn.configure(pady="0")
         self.go_to_btn.configure(text='''Go To''')
         
-        self.del_btn = tk.Button(self.Positions_tab)
+        self.del_btn = tk.Button(self.positions_tab)
         self.del_btn.place(relx=0.05, rely=0.6, height=24, width=80)
         self.del_btn.configure(activebackground="#ececec")
         self.del_btn.configure(activeforeground="#000000")
@@ -351,7 +350,7 @@ class MainWnd(tk.Toplevel):
         self.del_btn.configure(pady="0")
         self.del_btn.configure(text='''Delete Pos''')
 
-        self.mark_btn = tk.Button(self.Positions_tab)
+        self.mark_btn = tk.Button(self.positions_tab)
         self.mark_btn.place(relx=0.05, rely=0.5, height=20, width=80)
         self.mark_btn.configure(activebackground="#ececec")
         self.mark_btn.configure(activeforeground="#000000")
@@ -364,7 +363,7 @@ class MainWnd(tk.Toplevel):
         self.mark_btn.configure(pady="0")
         self.mark_btn.configure(text='''Add Pos''')
         
-        self.offset_btn = tk.Button(self.Positions_tab)
+        self.offset_btn = tk.Button(self.positions_tab)
         self.offset_btn.place(relx=0.25, rely=0.5, height=20, width=80)
         self.offset_btn.configure(activebackground="#ececec")
         self.offset_btn.configure(activeforeground="#000000")
@@ -377,41 +376,41 @@ class MainWnd(tk.Toplevel):
         self.offset_btn.configure(pady="0")
         self.offset_btn.configure(text='''Add Offset''')
         
-        self.Pos_name_var = tk.StringVar(value = "Pos0")
+        self.pos_name_var = tk.StringVar(value = "Pos0")
 
-        self.Pos_name_ent = tk.Entry(self.Positions_tab)
-        self.Pos_name_ent.place(relx=0.1, rely=0.35, height=24, width=100)
-        self.Pos_name_ent.configure(background="white")
-        self.Pos_name_ent.configure(disabledforeground="#a3a3a3")
-        self.Pos_name_ent.configure(font="TkFixedFont")
-        self.Pos_name_ent.configure(foreground="#000000")
-        self.Pos_name_ent.configure(highlightbackground="#d9d9d9")
-        self.Pos_name_ent.configure(highlightcolor="black")
-        self.Pos_name_ent.configure(insertbackground="black")
-        self.Pos_name_ent.configure(selectbackground="blue")
-        self.Pos_name_ent.configure(selectforeground="white")
-        self.Pos_name_ent.configure(textvariable = self.Pos_name_var)
+        self.pos_name_ent = tk.Entry(self.positions_tab)
+        self.pos_name_ent.place(relx=0.1, rely=0.35, height=24, width=100)
+        self.pos_name_ent.configure(background="white")
+        self.pos_name_ent.configure(disabledforeground="#a3a3a3")
+        self.pos_name_ent.configure(font="TkFixedFont")
+        self.pos_name_ent.configure(foreground="#000000")
+        self.pos_name_ent.configure(highlightbackground="#d9d9d9")
+        self.pos_name_ent.configure(highlightcolor="black")
+        self.pos_name_ent.configure(insertbackground="black")
+        self.pos_name_ent.configure(selectbackground="blue")
+        self.pos_name_ent.configure(selectforeground="white")
+        self.pos_name_ent.configure(textvariable = self.pos_name_var)
         self.tooltip_font = "TkDefaultFont"
         self.Pos_index_tooltip = \
-        ToolTip(self.Pos_name_ent, self.tooltip_font, '''Write in the name of the position''')
+        ToolTip(self.pos_name_ent, self.tooltip_font, '''Write in the name of the position''')
         
         
-        self.Pos_list_var = tk.StringVar(value="Pos.txt")
+        self.pos_list_var = tk.StringVar(value="Pos.txt")
         
-        self.Pos_list_ent = tk.Entry(self.Positions_tab)
-        self.Pos_list_ent.place(relx=0.1, rely=0.05, height=24, width=80)
-        self.Pos_list_ent.configure(background="white")
-        self.Pos_list_ent.configure(disabledforeground="#a3a3a3")
-        self.Pos_list_ent.configure(font="TkFixedFont")
-        self.Pos_list_ent.configure(foreground="#000000")
-        self.Pos_list_ent.configure(highlightbackground="#d9d9d9")
-        self.Pos_list_ent.configure(highlightcolor="black")
-        self.Pos_list_ent.configure(insertbackground="black")
-        self.Pos_list_ent.configure(selectbackground="blue")
-        self.Pos_list_ent.configure(selectforeground="white")
-        self.Pos_list_ent.configure(textvariable = self.Pos_list_var)
+        self.pos_list_ent = tk.Entry(self.positions_tab)
+        self.pos_list_ent.place(relx=0.1, rely=0.05, height=24, width=80)
+        self.pos_list_ent.configure(background="white")
+        self.pos_list_ent.configure(disabledforeground="#a3a3a3")
+        self.pos_list_ent.configure(font="TkFixedFont")
+        self.pos_list_ent.configure(foreground="#000000")
+        self.pos_list_ent.configure(highlightbackground="#d9d9d9")
+        self.pos_list_ent.configure(highlightcolor="black")
+        self.pos_list_ent.configure(insertbackground="black")
+        self.pos_list_ent.configure(selectbackground="blue")
+        self.pos_list_ent.configure(selectforeground="white")
+        self.pos_list_ent.configure(textvariable = self.pos_list_var)
         
-        self.save_pos_list_btn = tk.Button(self.Positions_tab)
+        self.save_pos_list_btn = tk.Button(self.positions_tab)
         self.save_pos_list_btn.place(relx=0.05, rely=0.18, height=20
                 , width=80)
         self.save_pos_list_btn.configure(activebackground="#ececec")
@@ -425,7 +424,7 @@ class MainWnd(tk.Toplevel):
         self.save_pos_list_btn.configure(pady="0")
         self.save_pos_list_btn.configure(text='''Save List''')    
         
-        self.load_pos_list_btn = tk.Button(self.Positions_tab)
+        self.load_pos_list_btn = tk.Button(self.positions_tab)
         self.load_pos_list_btn.place(relx=0.25, rely=0.18, height=20
                 , width=80)
         self.load_pos_list_btn.configure(activebackground="#ececec")
@@ -442,12 +441,12 @@ class MainWnd(tk.Toplevel):
         
 
             
-        # self.pos_lbl = tk.Message(self.Positions_tab)
+        # self.pos_lbl = tk.Message(self.positions_tab)
         # self.pos_lbl.place(relx=0.05, rely=0.3, height=100, width=60)
         # self.pos_lbl.configure(bg="#f9f9f9")
         # self.pos_lbl.configure(fg="black")
         # self.pos_lbl.configure(justify = tk.LEFT)
-        # self.pos_lbl.configure(textvariable= Pos_Var)
+        # self.pos_lbl.configure(textvariable= pos_var)
         
 
 
@@ -458,107 +457,107 @@ class MainWnd(tk.Toplevel):
 ########################################################################
 
 
-        self.Rep_Lbl = tk.Label(self.Action_frm)
-        self.Rep_Lbl.place(relx=0.073, rely=0.22, height=18, width=64)
-        self.Rep_Lbl.configure(activebackground="#f9f9f9")
-        self.Rep_Lbl.configure(activeforeground="black")
-        self.Rep_Lbl.configure(background="#d9d9d9")
-        self.Rep_Lbl.configure(disabledforeground="#a3a3a3")
-        self.Rep_Lbl.configure(foreground="#000000")
-        self.Rep_Lbl.configure(highlightbackground="#d9d9d9")
-        self.Rep_Lbl.configure(highlightcolor="black")
-        self.Rep_Lbl.configure(text='''Iterations:''')
+        self.iterations_lbl = tk.Label(self.action_frame)
+        self.iterations_lbl.place(relx=0.073, rely=0.22, height=18, width=64)
+        self.iterations_lbl.configure(activebackground="#f9f9f9")
+        self.iterations_lbl.configure(activeforeground="black")
+        self.iterations_lbl.configure(background="#d9d9d9")
+        self.iterations_lbl.configure(disabledforeground="#a3a3a3")
+        self.iterations_lbl.configure(foreground="#000000")
+        self.iterations_lbl.configure(highlightbackground="#d9d9d9")
+        self.iterations_lbl.configure(highlightcolor="black")
+        self.iterations_lbl.configure(text='''Iterations:''')
 
-        self.Rep_Ent = tk.Entry(self.Action_frm)
-        self.Rep_Ent.place(relx=0.328, rely=0.22, height=20, relwidth=0.146)
-        self.Rep_Ent.configure(background="white")
-        self.Rep_Ent.configure(disabledforeground="#a3a3a3")
-        self.Rep_Ent.configure(font="TkFixedFont")
-        self.Rep_Ent.configure(foreground="#000000")
-        self.Rep_Ent.configure(highlightbackground="#d9d9d9")
-        self.Rep_Ent.configure(highlightcolor="black")
-        self.Rep_Ent.configure(insertbackground="black")
-        self.Rep_Ent.configure(selectbackground="blue")
-        self.Rep_Ent.configure(selectforeground="white")
-        self.Rep_Ent.configure(textvariable=Rep_Var)
+        self.iterations_ent = tk.Entry(self.action_frame)
+        self.iterations_ent.place(relx=0.328, rely=0.22, height=20, relwidth=0.146)
+        self.iterations_ent.configure(background="white")
+        self.iterations_ent.configure(disabledforeground="#a3a3a3")
+        self.iterations_ent.configure(font="TkFixedFont")
+        self.iterations_ent.configure(foreground="#000000")
+        self.iterations_ent.configure(highlightbackground="#d9d9d9")
+        self.iterations_ent.configure(highlightcolor="black")
+        self.iterations_ent.configure(insertbackground="black")
+        self.iterations_ent.configure(selectbackground="blue")
+        self.iterations_ent.configure(selectforeground="white")
+        self.iterations_ent.configure(textvariable=rep_var)
         
-        self.Intervall_Ent = tk.Entry(self.Action_frm)
-        self.Intervall_Ent.place(relx=0.328, rely=0.38, height=20
+        self.intervall_ent = tk.Entry(self.action_frame)
+        self.intervall_ent.place(relx=0.328, rely=0.38, height=20
                 , relwidth=0.146)
-        self.Intervall_Ent.configure(background="white")
-        self.Intervall_Ent.configure(disabledforeground="#a3a3a3")
-        self.Intervall_Ent.configure(font="TkFixedFont")
-        self.Intervall_Ent.configure(foreground="#000000")
-        self.Intervall_Ent.configure(highlightbackground="#d9d9d9")
-        self.Intervall_Ent.configure(highlightcolor="black")
-        self.Intervall_Ent.configure(insertbackground="black")
-        self.Intervall_Ent.configure(selectbackground="blue")
-        self.Intervall_Ent.configure(selectforeground="white")
-        self.Intervall_Ent.configure(textvariable=Int_Var)
+        self.intervall_ent.configure(background="white")
+        self.intervall_ent.configure(disabledforeground="#a3a3a3")
+        self.intervall_ent.configure(font="TkFixedFont")
+        self.intervall_ent.configure(foreground="#000000")
+        self.intervall_ent.configure(highlightbackground="#d9d9d9")
+        self.intervall_ent.configure(highlightcolor="black")
+        self.intervall_ent.configure(insertbackground="black")
+        self.intervall_ent.configure(selectbackground="blue")
+        self.intervall_ent.configure(selectforeground="white")
+        self.intervall_ent.configure(textvariable=int_var)
 
-        self.Interval_lbl = tk.Label(self.Action_frm)
-        self.Interval_lbl.place(relx=0.073, rely=0.38, height=18, width=70)
-        self.Interval_lbl.configure(activebackground="#f9f9f9")
-        self.Interval_lbl.configure(activeforeground="black")
-        self.Interval_lbl.configure(background="#d9d9d9")
-        self.Interval_lbl.configure(disabledforeground="#a3a3a3")
-        self.Interval_lbl.configure(foreground="#000000")
-        self.Interval_lbl.configure(highlightbackground="#d9d9d9")
-        self.Interval_lbl.configure(highlightcolor="black")
-        self.Interval_lbl.configure(text='''Interval(s):''')
+        self.interval_lbl = tk.Label(self.action_frame)
+        self.interval_lbl.place(relx=0.073, rely=0.38, height=18, width=70)
+        self.interval_lbl.configure(activebackground="#f9f9f9")
+        self.interval_lbl.configure(activeforeground="black")
+        self.interval_lbl.configure(background="#d9d9d9")
+        self.interval_lbl.configure(disabledforeground="#a3a3a3")
+        self.interval_lbl.configure(foreground="#000000")
+        self.interval_lbl.configure(highlightbackground="#d9d9d9")
+        self.interval_lbl.configure(highlightcolor="black")
+        self.interval_lbl.configure(text='''Interval(s):''')
 
         
-        self.Temp_sep_Lbl = tk.Label(self.Action_frm)
-        self.Temp_sep_Lbl.place(relx=0.073, rely=0.54, height=18, width=80)
-        self.Temp_sep_Lbl.configure(activebackground="#f9f9f9")
-        self.Temp_sep_Lbl.configure(activeforeground="black")
-        self.Temp_sep_Lbl.configure(background="#d9d9d9")
-        self.Temp_sep_Lbl.configure(disabledforeground="#a3a3a3")
-        self.Temp_sep_Lbl.configure(foreground="#000000")
-        self.Temp_sep_Lbl.configure(highlightbackground="#d9d9d9")
-        self.Temp_sep_Lbl.configure(highlightcolor="black")
-        self.Temp_sep_Lbl.configure(text='''Pos time(s):''')
+        self.temp_sep_lbl = tk.Label(self.action_frame)
+        self.temp_sep_lbl.place(relx=0.073, rely=0.54, height=18, width=80)
+        self.temp_sep_lbl.configure(activebackground="#f9f9f9")
+        self.temp_sep_lbl.configure(activeforeground="black")
+        self.temp_sep_lbl.configure(background="#d9d9d9")
+        self.temp_sep_lbl.configure(disabledforeground="#a3a3a3")
+        self.temp_sep_lbl.configure(foreground="#000000")
+        self.temp_sep_lbl.configure(highlightbackground="#d9d9d9")
+        self.temp_sep_lbl.configure(highlightcolor="black")
+        self.temp_sep_lbl.configure(text='''Pos time(s):''')
 
-        self.Temp_sep_Ent = tk.Entry(self.Action_frm)
-        self.Temp_sep_Ent.place(relx=0.328, rely=0.54, height=20, relwidth=0.146)
-        self.Temp_sep_Ent.configure(background="white")
-        self.Temp_sep_Ent.configure(disabledforeground="#a3a3a3")
-        self.Temp_sep_Ent.configure(font="TkFixedFont")
-        self.Temp_sep_Ent.configure(foreground="#000000")
-        self.Temp_sep_Ent.configure(highlightbackground="#d9d9d9")
-        self.Temp_sep_Ent.configure(highlightcolor="black")
-        self.Temp_sep_Ent.configure(insertbackground="black")
-        self.Temp_sep_Ent.configure(selectbackground="blue")
-        self.Temp_sep_Ent.configure(selectforeground="white")
-        self.Temp_sep_Ent.configure(textvariable=Temp_Sep_Var)
+        self.temp_sep_ent = tk.Entry(self.action_frame)
+        self.temp_sep_ent.place(relx=0.328, rely=0.54, height=20, relwidth=0.146)
+        self.temp_sep_ent.configure(background="white")
+        self.temp_sep_ent.configure(disabledforeground="#a3a3a3")
+        self.temp_sep_ent.configure(font="TkFixedFont")
+        self.temp_sep_ent.configure(foreground="#000000")
+        self.temp_sep_ent.configure(highlightbackground="#d9d9d9")
+        self.temp_sep_ent.configure(highlightcolor="black")
+        self.temp_sep_ent.configure(insertbackground="black")
+        self.temp_sep_ent.configure(selectbackground="blue")
+        self.temp_sep_ent.configure(selectforeground="white")
+        self.temp_sep_ent.configure(textvariable=temp_sep_var)
         
-        self.ExpName_Ent = tk.Entry(self.Action_frm)
-        self.ExpName_Ent.place(relx=0.4, rely=0.054, height=18, width=104)
-        self.ExpName_Ent.configure(background="white")
-        self.ExpName_Ent.configure(disabledforeground="#a3a3a3")
-        self.ExpName_Ent.configure(font="TkFixedFont")
-        self.ExpName_Ent.configure(foreground="#000000")
-        self.ExpName_Ent.configure(highlightbackground="#d9d9d9")
-        self.ExpName_Ent.configure(highlightcolor="black")
-        self.ExpName_Ent.configure(insertbackground="black")
-        self.ExpName_Ent.configure(selectbackground="blue")
-        self.ExpName_Ent.configure(selectforeground="white")
-        self.ExpName_Ent.configure(textvariable=' ')
+        self.exp_name_ent = tk.Entry(self.action_frame)
+        self.exp_name_ent.place(relx=0.4, rely=0.054, height=18, width=104)
+        self.exp_name_ent.configure(background="white")
+        self.exp_name_ent.configure(disabledforeground="#a3a3a3")
+        self.exp_name_ent.configure(font="TkFixedFont")
+        self.exp_name_ent.configure(foreground="#000000")
+        self.exp_name_ent.configure(highlightbackground="#d9d9d9")
+        self.exp_name_ent.configure(highlightcolor="black")
+        self.exp_name_ent.configure(insertbackground="black")
+        self.exp_name_ent.configure(selectbackground="blue")
+        self.exp_name_ent.configure(selectforeground="white")
+        self.exp_name_ent.configure(textvariable=' ')
         
-        self.exp_Name_lbl = tk.Label(self.Action_frm)
-        self.exp_Name_lbl.place(relx=0.073, rely=0.054, height=18, width=104)
-        self.exp_Name_lbl.configure(activebackground="#f9f9f9")
-        self.exp_Name_lbl.configure(activeforeground="black")
-        self.exp_Name_lbl.configure(background="#d9d9d9")
-        self.exp_Name_lbl.configure(disabledforeground="#a3a3a3")
-        self.exp_Name_lbl.configure(foreground="#000000")
-        self.exp_Name_lbl.configure(highlightbackground="#d9d9d9")
-        self.exp_Name_lbl.configure(highlightcolor="black")
-        self.exp_Name_lbl.configure(text='''Experiment Name:''')
+        self.exp_name_lbl = tk.Label(self.action_frame)
+        self.exp_name_lbl.place(relx=0.073, rely=0.054, height=18, width=104)
+        self.exp_name_lbl.configure(activebackground="#f9f9f9")
+        self.exp_name_lbl.configure(activeforeground="black")
+        self.exp_name_lbl.configure(background="#d9d9d9")
+        self.exp_name_lbl.configure(disabledforeground="#a3a3a3")
+        self.exp_name_lbl.configure(foreground="#000000")
+        self.exp_name_lbl.configure(highlightbackground="#d9d9d9")
+        self.exp_name_lbl.configure(highlightcolor="black")
+        self.exp_name_lbl.configure(text='''Experiment Name:''')
         
         self.ser_com_var = tk.StringVar(value = "Serial Command")
         
-        self.ser_com_ent = tk.Entry(self.Action_frm)
+        self.ser_com_ent = tk.Entry(self.action_frame)
         self.ser_com_ent.place(relx=0.05, rely=0.75, height=20, relwidth=0.55)
         self.ser_com_ent.configure(background="white")
         self.ser_com_ent.configure(disabledforeground="#a3a3a3")
@@ -575,7 +574,7 @@ class MainWnd(tk.Toplevel):
                 Timer:{Repition}{Command}{Parameter} to queue commands for later iterations.''')
         
         
-        self.send_ser_btn = tk.Button(self.Action_frm)
+        self.send_ser_btn = tk.Button(self.action_frame)
         self.send_ser_btn.place(relx=0.65, rely=0.75, height=20, width=80)
         self.send_ser_btn.configure(activebackground="#ececec")
         self.send_ser_btn.configure(activeforeground="#000000")
@@ -588,72 +587,70 @@ class MainWnd(tk.Toplevel):
         self.send_ser_btn.configure(pady="0")
         self.send_ser_btn.configure(text='''Send Com''')
         
-
-        
                 
-        self.autofocus_Flag = tk.BooleanVar()
-        self.autofocus_Flag.set(False)
-        self.AutoFocusBox = ttk.Checkbutton(self.Action_frm,text="Autofocus", variable = self.autofocus_Flag)
-        self.AutoFocusBox.place( relx=0.6, rely=0.25, height=30, width=80)
+        self.autofocus_flag = tk.BooleanVar()
+        self.autofocus_flag.set(False)
+        self.autofocus_box = ttk.Checkbutton(self.action_frame,text="Autofocus", variable = self.autofocus_flag)
+        self.autofocus_box.place( relx=0.6, rely=0.25, height=30, width=80)
         
-        self.dark_Adapt_Flag = tk.BooleanVar()
-        self.dark_Adapt_Flag.set(False)
-        self.AutoFocusBox = ttk.Checkbutton(self.Action_frm,text="Dark-Adapt", variable = self.dark_Adapt_Flag)
-        self.AutoFocusBox.place( relx=0.6, rely=0.4, height=30, width=85)
+        self.dark_adapt_flag = tk.BooleanVar()
+        self.dark_adapt_flag.set(False)
+        self.autofocus_box = ttk.Checkbutton(self.action_frame,text="Dark-Adapt", variable = self.dark_adapt_flag)
+        self.autofocus_box.place( relx=0.6, rely=0.4, height=30, width=85)
 
-        self.Run_btn = tk.Button(top)
-        self.Run_btn.place(relx=0.60, rely=0.8, height=40, width=160)
-        self.Run_btn.configure(activebackground="#ececec")
-        self.Run_btn.configure(activeforeground="#000000")
-        self.Run_btn.configure(background="#d9d9d9")
-        self.Run_btn.configure(command= lambda: self.run_exp())
-        self.Run_btn.configure(disabledforeground="#a3a3a3")
-        self.Run_btn.configure(foreground="#000000")
-        self.Run_btn.configure(highlightbackground="#d9d9d9")
-        self.Run_btn.configure(highlightcolor="black")
-        self.Run_btn.configure(pady="0")
-        self.Run_btn.configure(text='''Run Experiment''')
+        self.run_exp_btn = tk.Button(top)
+        self.run_exp_btn.place(relx=0.60, rely=0.8, height=40, width=160)
+        self.run_exp_btn.configure(activebackground="#ececec")
+        self.run_exp_btn.configure(activeforeground="#000000")
+        self.run_exp_btn.configure(background="#d9d9d9")
+        self.run_exp_btn.configure(command= lambda: self.run_exp())
+        self.run_exp_btn.configure(disabledforeground="#a3a3a3")
+        self.run_exp_btn.configure(foreground="#000000")
+        self.run_exp_btn.configure(highlightbackground="#d9d9d9")
+        self.run_exp_btn.configure(highlightcolor="black")
+        self.run_exp_btn.configure(pady="0")
+        self.run_exp_btn.configure(text='''Run Experiment''')
 
-        self.Settings_frm = ttk.Frame(self.Main_tab)
-        self.Settings_frm.place(relx=0.60, rely=0.05, relheight=0.65
+        self.settings_frm = ttk.Frame(self.main_tab)
+        self.settings_frm.place(relx=0.60, rely=0.05, relheight=0.65
                 , relwidth=0.30)
-        self.Settings_frm.configure(relief='groove')
-        self.Settings_frm.configure(borderwidth="2")
-        self.Settings_frm.configure(relief="groove")
-        #self.Settings_frm.configure(background="#d9d9d9")
-        #self.Settings_frm.configure(highlightbackground="#d9d9d9")
-        #self.Settings_frm.configure(highlightcolor="black")
+        self.settings_frm.configure(relief='groove')
+        self.settings_frm.configure(borderwidth="2")
+        self.settings_frm.configure(relief="groove")
+        #self.settings_frm.configure(background="#d9d9d9")
+        #self.settings_frm.configure(highlightbackground="#d9d9d9")
+        #self.settings_frm.configure(highlightcolor="black")
 
-        self.run_z_stack = tk.Button(self.Settings_frm)
-        self.run_z_stack.place(relx=0.1, rely=0.45, height=20, width=140)
-        self.run_z_stack.configure(activebackground="#ececec")
-        self.run_z_stack.configure(activeforeground="#000000")
-        self.run_z_stack.configure(background="#d9d9d9")
-        self.run_z_stack.configure(command=lambda:SCM.make_z_stack())
-        self.run_z_stack.configure(disabledforeground="#a3a3a3")
-        self.run_z_stack.configure(foreground="#000000")
-        self.run_z_stack.configure(highlightbackground="#d9d9d9")
-        self.run_z_stack.configure(highlightcolor="black")
-        self.run_z_stack.configure(pady="0")
-        self.run_z_stack.configure(text='''Make Z-Stack''') 
-        self.run_z_stack_tooltip = \
-        ToolTip(self.run_z_stack, self.tooltip_font, '''Give step and extent as "step,extent" ''')
+        self.run_z_stack_btn = tk.Button(self.settings_frm)
+        self.run_z_stack_btn.place(relx=0.1, rely=0.45, height=20, width=140)
+        self.run_z_stack_btn.configure(activebackground="#ececec")
+        self.run_z_stack_btn.configure(activeforeground="#000000")
+        self.run_z_stack_btn.configure(background="#d9d9d9")
+        self.run_z_stack_btn.configure(command=lambda:SCM.make_z_stack())
+        self.run_z_stack_btn.configure(disabledforeground="#a3a3a3")
+        self.run_z_stack_btn.configure(foreground="#000000")
+        self.run_z_stack_btn.configure(highlightbackground="#d9d9d9")
+        self.run_z_stack_btn.configure(highlightcolor="black")
+        self.run_z_stack_btn.configure(pady="0")
+        self.run_z_stack_btn.configure(text='''Make Z-Stack''') 
+        self.run_z_stack_btn_tooltip = \
+        ToolTip(self.run_z_stack_btn, self.tooltip_font, '''Give step and extent as "step,extent" ''')
         
-        self.Yield_btn = tk.Button(self.Settings_frm)
-        self.Yield_btn.place(relx=0.1, rely=0.2, height=20, width=140)
-        self.Yield_btn.configure(activebackground="#ececec")
-        self.Yield_btn.configure(activeforeground="#000000")
-        self.Yield_btn.configure(background="#d9d9d9")
-        self.Yield_btn.configure(command= lambda: snap_img)
-        self.Yield_btn.configure(disabledforeground="#a3a3a3")
-        self.Yield_btn.configure(foreground="#000000")
-        self.Yield_btn.configure(highlightbackground="#d9d9d9")
-        self.Yield_btn.configure(highlightcolor="black")
-        self.Yield_btn.configure(pady="0")
-        self.Yield_btn.configure(text='''Yield''')  
+        self.yield_btn = tk.Button(self.settings_frm)
+        self.yield_btn.place(relx=0.1, rely=0.2, height=20, width=140)
+        self.yield_btn.configure(activebackground="#ececec")
+        self.yield_btn.configure(activeforeground="#000000")
+        self.yield_btn.configure(background="#d9d9d9")
+        self.yield_btn.configure(command= lambda: snap_img)
+        self.yield_btn.configure(disabledforeground="#a3a3a3")
+        self.yield_btn.configure(foreground="#000000")
+        self.yield_btn.configure(highlightbackground="#d9d9d9")
+        self.yield_btn.configure(highlightcolor="black")
+        self.yield_btn.configure(pady="0")
+        self.yield_btn.configure(text='''Yield''')  
 
 
-        self.run_start_btn = tk.Button(self.Settings_frm)
+        self.run_start_btn = tk.Button(self.settings_frm)
         self.run_start_btn.place(relx=0.1, rely=0.70, height=20, width=140)
         self.run_start_btn.configure(activebackground="#ececec")
         self.run_start_btn.configure(activeforeground="#000000")
@@ -666,9 +663,9 @@ class MainWnd(tk.Toplevel):
         self.run_start_btn.configure(pady="0")
         self.run_start_btn.configure(text='''Run Start Script''')       
 
-        self.Exp_Progress = ttk.Progressbar(top, mode = 'determinate')
-        self.Exp_Progress.place(relx=0.08, rely=0.85, relwidth=0.40 , height=22)
-        self.Exp_Progress.configure(length="100")
+        self.exp_progress = ttk.Progressbar(top, mode = 'determinate')
+        self.exp_progress.place(relx=0.08, rely=0.85, relwidth=0.40 , height=22)
+        self.exp_progress.configure(length="100")
 
         self.log_lbl = tk.Label(top, anchor = "w")
         self.log_lbl.place(relx=0.08, rely=0.75, height=20, width=340)
@@ -691,10 +688,10 @@ class MainWnd(tk.Toplevel):
         col_pos = 0.25
         lbl_w = 0.15
         ent_w=0.08
-        self.Use_PLLS = tk.IntVar()
-        self.Use_LPL = tk.IntVar()
+        self.use_PLLS = tk.IntVar()
+        self.use_LPL = tk.IntVar()
         
-        self.dZMin_lbl = tk.Label(self.AF_frm)
+        self.dZMin_lbl = tk.Label(self.autofocus_frame)
         self.dZMin_lbl.place(relx=0.05, rely=row_pos, height=25, relwidth=lbl_w)
         self.dZMin_lbl.configure(activebackground="#f9f9f9")
         self.dZMin_lbl.configure(activeforeground="black")
@@ -705,7 +702,7 @@ class MainWnd(tk.Toplevel):
         self.dZMin_lbl.configure(highlightcolor="black")
         self.dZMin_lbl.configure(text='''AF Threshold:''')
 
-        self.dZMin_ent = tk.Entry(self.AF_frm)
+        self.dZMin_ent = tk.Entry(self.autofocus_frame)
         self.dZMin_ent.place(relx=col_pos, rely=row_pos, height=20, relwidth=ent_w)
         self.dZMin_ent.configure(background="white")
         self.dZMin_ent.configure(disabledforeground="#a3a3a3")
@@ -717,7 +714,7 @@ class MainWnd(tk.Toplevel):
         self.dZMin_ent.configure(selectbackground="blue")
         self.dZMin_ent.configure(selectforeground="white")
         
-        self.AFStrength_lbl = tk.Label(self.AF_frm)
+        self.AFStrength_lbl = tk.Label(self.autofocus_frame)
         self.AFStrength_lbl.place(relx=col_pos+0.1, rely=row_pos, height=25, relwidth=lbl_w)
         self.AFStrength_lbl.configure(activebackground="#f9f9f9")
         self.AFStrength_lbl.configure(activeforeground="black")
@@ -728,7 +725,7 @@ class MainWnd(tk.Toplevel):
         self.AFStrength_lbl.configure(highlightcolor="black")
         self.AFStrength_lbl.configure(text='''AF Strength:''')
 
-        self.AFStrength_ent = tk.Entry(self.AF_frm)
+        self.AFStrength_ent = tk.Entry(self.autofocus_frame)
         self.AFStrength_ent.place(relx=col_pos*2, rely=row_pos, height=20, relwidth=ent_w)
         self.AFStrength_ent.configure(background="white")
         self.AFStrength_ent.configure(disabledforeground="#a3a3a3")
@@ -740,7 +737,7 @@ class MainWnd(tk.Toplevel):
         self.AFStrength_ent.configure(selectbackground="blue")
         self.AFStrength_ent.configure(selectforeground="white")     
         
-        self.minCirc_lbl = tk.Label(self.AF_frm)
+        self.minCirc_lbl = tk.Label(self.autofocus_frame)
         self.minCirc_lbl.place(relx=0.05, rely=row_pos*2, height=25, relwidth=lbl_w)
         self.minCirc_lbl.configure(activebackground="#f9f9f9")
         self.minCirc_lbl.configure(activeforeground="black")
@@ -751,7 +748,7 @@ class MainWnd(tk.Toplevel):
         self.minCirc_lbl.configure(highlightcolor="black")
         self.minCirc_lbl.configure(text='''Min circularity:''')
 
-        self.minCirc_ent = tk.Entry(self.AF_frm)
+        self.minCirc_ent = tk.Entry(self.autofocus_frame)
         self.minCirc_ent.place(relx=col_pos, rely=row_pos*2, height=20, relwidth=ent_w)
         self.minCirc_ent.configure(background="white")
         self.minCirc_ent.configure(disabledforeground="#a3a3a3")
@@ -763,7 +760,7 @@ class MainWnd(tk.Toplevel):
         self.minCirc_ent.configure(selectbackground="blue")
         self.minCirc_ent.configure(selectforeground="white")
         
-        self.minInert_lbl = tk.Label(self.AF_frm)
+        self.minInert_lbl = tk.Label(self.autofocus_frame)
         self.minInert_lbl.place(relx=0.1 + col_pos, rely=row_pos*2, height=25, relwidth=lbl_w)
         self.minInert_lbl.configure(activebackground="#f9f9f9")
         self.minInert_lbl.configure(activeforeground="black")
@@ -774,7 +771,7 @@ class MainWnd(tk.Toplevel):
         self.minInert_lbl.configure(highlightcolor="black")
         self.minInert_lbl.configure(text='''Min Inertia:''')
 
-        self.minInert_ent = tk.Entry(self.AF_frm)
+        self.minInert_ent = tk.Entry(self.autofocus_frame)
         self.minInert_ent.place(relx=col_pos*2, rely=row_pos*2, height=20, relwidth=ent_w)
         self.minInert_ent.configure(background="white")
         self.minInert_ent.configure(disabledforeground="#a3a3a3")
@@ -786,7 +783,7 @@ class MainWnd(tk.Toplevel):
         self.minInert_ent.configure(selectbackground="blue")
         self.minInert_ent.configure(selectforeground="white")   
         
-        self.size_lbl = tk.Label(self.AF_frm)
+        self.size_lbl = tk.Label(self.autofocus_frame)
         self.size_lbl.place(relx=0.1 + col_pos, rely=row_pos*3, height=25, relwidth=lbl_w)
         self.size_lbl.configure(activebackground="#f9f9f9")
         self.size_lbl.configure(activeforeground="black")
@@ -797,7 +794,7 @@ class MainWnd(tk.Toplevel):
         self.size_lbl.configure(highlightcolor="black")
         self.size_lbl.configure(text='''Size filter:''')
 
-        self.size_ent = tk.Entry(self.AF_frm)
+        self.size_ent = tk.Entry(self.autofocus_frame)
         self.size_ent.place(relx=col_pos*2, rely=row_pos*3, height=20, relwidth=ent_w)
         self.size_ent.configure(background="white")
         self.size_ent.configure(disabledforeground="#a3a3a3")
@@ -810,7 +807,7 @@ class MainWnd(tk.Toplevel):
         self.size_ent.configure(selectforeground="white")   
         
         
-        self.load_AF_btn = tk.Button(self.AF_frm)
+        self.load_AF_btn = tk.Button(self.autofocus_frame)
         self.load_AF_btn.place(relx=0.6, rely=row_pos*5, height=30, width=150)
         self.load_AF_btn.configure(activebackground="#ececec")
         self.load_AF_btn.configure(activeforeground="#000000")
@@ -823,7 +820,7 @@ class MainWnd(tk.Toplevel):
         self.load_AF_btn.configure(pady="0")
         self.load_AF_btn.configure(text='''Set Autofocus parameters''')
         
-        self.AF_calibration_btn = tk.Button(self.AF_frm)
+        self.AF_calibration_btn = tk.Button(self.autofocus_frame)
         self.AF_calibration_btn.place(relx=0.2, rely=row_pos*5, height=30, width=150)
         self.AF_calibration_btn.configure(activebackground="#ececec")
         self.AF_calibration_btn.configure(activeforeground="#000000")
@@ -836,61 +833,61 @@ class MainWnd(tk.Toplevel):
         self.AF_calibration_btn.configure(pady="0")
         self.AF_calibration_btn.configure(text='''Autofocus Calibration''')
         
-        self.Use_LPL_Chk = ttk.Checkbutton(self.AF_frm,text="Use Laplacian scoring",variable = self.Use_LPL)
-        self.Use_LPL_Chk.place(relx=col_pos*2+0.15, rely=row_pos*1)
+        self.use_LPL_chk = ttk.Checkbutton(self.autofocus_frame,text="Use Laplacian scoring",variable = self.use_LPL)
+        self.use_LPL_chk.place(relx=col_pos*2+0.15, rely=row_pos*1)
         
-        self.Use_PLLS_Chk = ttk.Checkbutton(self.AF_frm, text="Use Power-log-log-scoring",variable = self.Use_PLLS)
-        self.Use_PLLS_Chk.place(relx=col_pos*2+0.15,rely=row_pos*2)
+        self.use_PLLS_chk = ttk.Checkbutton(self.autofocus_frame, text="Use Power-log-log-scoring",variable = self.use_PLLS)
+        self.use_PLLS_chk.place(relx=col_pos*2+0.15,rely=row_pos*2)
         
 
 ########################################################################
 ##########################Rest######################################
 ########################################################################
 
-        self.log_Positions = tk.BooleanVar()
-        self.log_Positions.set(False)
+        self.log_positions = tk.BooleanVar()
+        self.log_positions.set(False)
         self.menubar = tk.Menu(top,font="TkMenuFont",bg=_bgcolor,fg=_fgcolor)
         top.configure(menu = self.menubar)
 
-        self.mainmenu  = tk.Menu(self.menubar, tearoff = 0)
-        self.mainmenu.add_command(
+        self.main_menubar  = tk.Menu(self.menubar, tearoff = 0)
+        self.main_menubar.add_command(
                 label="Initialize Encoder", command = lambda: PacManHndl.StageCom.init_encoder())
-        self.mainmenu.add_command(
+        self.main_menubar.add_command(
                 label="Reload Stage Connection", command = lambda: PacManHndl.StageCom.reinit())
-        self.mainmenu.add_command(
-                label="Reload IPam Connection", command = lambda: PacManHndl.IPam.initialize_Connection())
-        self.mainmenu.add_command(
+        self.main_menubar.add_command(
+                label="Reload IPam Connection", command = lambda: PacManHndl.IPam.initialize_connection())
+        self.main_menubar.add_command(
                 label="Cancel Experiment", command = lambda: PacManHndl.cancel_exp())
-        self.menubar.add_cascade(label = 'Main', menu = self.mainmenu)
+        self.menubar.add_cascade(label = 'Main', menu = self.main_menubar)
                 
 
-        self.settingsmenu  = tk.Menu(self.menubar, tearoff = 0)
-        self.settingsmenu.add_command(
-                label="Select Experiment Directory", command = lambda: PacManHndl.sel_exp_dir(ttk.filedialog.askdirectory(mustexist = True)))
-        self.settingsmenu.add_command(
+        self.settings_menubar  = tk.Menu(self.menubar, tearoff = 0)
+        self.settings_menubar.add_command(
+                label="Select Experiment Directory", command = lambda: PacManHndl.select_exp_dir(ttk.filedialog.askdirectory(mustexist = True)))
+        self.settings_menubar.add_command(
                 label="Set communications port (SCM)", command = lambda: self.changeComPort("SCM"))
-        self.settingsmenu.add_command(
+        self.settings_menubar.add_command(
                 label="Set communications port (IRHM)", command = lambda: self.changeComPort("IRHM"))
-        self.settingsmenu.add_checkbutton(
-                label="Log position movements (Movements.txt)", onvalue=1,offvalue=0,variable = self.log_Positions)
+        self.settings_menubar.add_checkbutton(
+                label="Log position movements (Movements.txt)", onvalue=1,offvalue=0,variable = self.log_positions)
         
-        self.scriptmenu  = tk.Menu(self.menubar, tearoff = 0)
-        self.scriptmenu.add_command(
+        self.script_menubar  = tk.Menu(self.menubar, tearoff = 0)
+        self.script_menubar.add_command(
                 label="Run start Script", command = lambda: rld_start())
-        self.scriptmenu.add_command(
+        self.script_menubar.add_command(
                 label="Run acquistion Script", command = lambda: rld_pos())
-        self.scriptmenu.add_command(
+        self.script_menubar.add_command(
                 label="Select Start Script", command = lambda: PacManHndl.set_start_script(ttk.filedialog.askopenfilename()))
-        self.scriptmenu.add_command(
+        self.script_menubar.add_command(
                 label="Select Position Script", command = lambda: PacManHndl.set_pos_script(ttk.filedialog.askopenfilename()))
-        self.helpmenu = tk.Menu(self.menubar,tearoff=0)
-        self.helpmenu.add_command(
+        self.help_menubar = tk.Menu(self.menubar,tearoff=0)
+        self.help_menubar.add_command(
             label = "Open manual", command = "")
-        self.helpmenu.add_command(
+        self.help_menubar.add_command(
             label = "About", command = lambda: self.popupmsg())
-        self.menubar.add_cascade(label = 'Settings', menu = self.settingsmenu)
-        self.menubar.add_cascade(label = 'Scripts', menu = self.scriptmenu)
-        self.menubar.add_cascade(label = 'Help', menu = self.helpmenu)
+        self.menubar.add_cascade(label = 'Settings', menu = self.settings_menubar)
+        self.menubar.add_cascade(label = 'Scripts', menu = self.script_menubar)
+        self.menubar.add_cascade(label = 'Help', menu = self.help_menubar)
         self.menubar.add_command(label="Exit", command=lambda:destroy_window())
 
         self.tabControl.pack(expand = 1, fill = 'both')
@@ -898,18 +895,18 @@ class MainWnd(tk.Toplevel):
     def run_exp(self):
         print("Run experiment button pressed")
         try:
-            if(int(self.Intervall_Ent.get()) < 1 or int(self.Rep_Ent.get()) < 1):
+            if(int(self.intervall_ent.get()) < 1 or int(self.iterations_ent.get()) < 1):
                 raise ValueError("Experiment repetitions or Experiment Intervalls are either below zero or not correctly formatted")
             if(PacManHndl.StageCom.get_pos_list_length() < 1):
                 print("DEBUG POSITIONS LOADED")
-                PacManHndl.StageCom.DEBUG_LOAD_POSITIONS()
+                PacManHndl.StageCom.load_pos_list_file()
                 update_pos_list()
-            self.Run_btn.configure(text = "Cancel Experiment")
-            self.Run_btn.configure(command = lambda: self.cancel_exp())
-            PacManHndl.run_Experiment(self, [self.ExpName_Ent.get(), Rep_Var.get(), Int_Var.get(), Temp_Sep_Var.get(), self.autofocus_Flag.get(),self.dark_Adapt_Flag.get(),self.log_Positions], True)
+            self.run_exp_btn.configure(text = "Cancel Experiment")
+            self.run_exp_btn.configure(command = lambda: self.cancel_exp())
+            PacManHndl.run_experiment(self, [self.exp_name_ent.get(), rep_var.get(), int_var.get(), temp_sep_var.get(), self.autofocus_flag.get(),self.dark_adapt_flag.get(),self.log_positions], True)
             self.reset_exp()
         except Exception as e:
-            exception_Handler(e)
+            exception_handler(e)
     
     def cancel_exp(self):
         tk.messagebox.showwarning("Experiment cancelled")
@@ -917,15 +914,15 @@ class MainWnd(tk.Toplevel):
         self.reset_exp()     
     
     def reset_exp(self):
-         self.Run_btn.configure(text = "Run Experiment")
-         self.Run_btn.configure(command = lambda: self.run_exp())
-         self.Exp_Progress['value'] = 0
+         self.run_exp_btn.configure(text = "Run Experiment")
+         self.run_exp_btn.configure(command = lambda: self.run_exp())
+         self.exp_progress['value'] = 0
          update_pos_list()
     
     def calibration_Window(self):
         cal_wnd = tk.Toplevel(root)
         cal_wnd.title("Calibration Settings")
-        cal_wnd.geometry("400x200")
+        cal_wnd.geometry("300x125")
         
         dist_label = tk.Label(cal_wnd,text="Z-range to calibrate over")
         str_label = tk.Label(cal_wnd, text = "Starting Strength")
@@ -939,8 +936,8 @@ class MainWnd(tk.Toplevel):
         dist_entry = tk.Entry(cal_wnd, textvariable = dist_str)
         str_entry = tk.Entry(cal_wnd, textvariable = strength_str)
         
-        Use_LPL_chk = ttk.Checkbutton(cal_wnd,text="Use Laplacian scoring",variable = calib_LPL)        
-        Use_PLLS_chk = ttk.Checkbutton(cal_wnd, text="Use Power-log-log-scoring",variable = calib_PLLS)
+        use_LPL_chk = ttk.Checkbutton(cal_wnd,text="Use Laplacian scoring",variable = calib_LPL)        
+        use_PLLS_chk = ttk.Checkbutton(cal_wnd, text="Use Power-log-log-scoring",variable = calib_PLLS)
         
         yes_btn = tk.Button(cal_wnd,text="Run Calibration",command = lambda: PacManHndl.AutoFocuser.calibrate(
             IPAM = PacManHndl.IPam , SCMH = PacManHndl.SCM, useLPL = calib_LPL.get(), usePLLS = calib_PLLS.get(), startStrength = int(strength_str.get()), calibrationDistance = float(dist_str.get())))
@@ -952,11 +949,11 @@ class MainWnd(tk.Toplevel):
         dist_entry.grid(column=1,row = 0)
         str_entry.grid(column=1,row = 1)
        
-        Use_LPL_chk.grid(column=2,row = 0)
-        Use_PLLS_chk.grid(column=2,row = 1)
+        use_LPL_chk.grid(column=0,row = 2)
+        use_PLLS_chk.grid(column=1,row = 2)
         
         yes_btn.grid(column=0,row = 3)
-        no_btn.grid(column=2,row = 3)
+        no_btn.grid(column=1,row = 3)
     
     #Wrappers
     def update(self):
@@ -965,7 +962,7 @@ class MainWnd(tk.Toplevel):
     def msg_box(self,title,msg):
         tk.messagebox.showwarning(title, msg)
         
-    def on_AF_Frm_Switch(self,event):
+    def on_autofocus_frame_Switch(self,event):
         settings = PacManHndl.AutoFocuser.GUIGetParams()
         self.dZMin_ent.delete(0,tk.END)
         self.dZMin_ent.insert(0,settings[0])
@@ -1141,6 +1138,6 @@ class ToolTip(tk.Toplevel):
 # ===========================================================
 
 if __name__ == '__main__':
-    debugstart()
+    debug_start()
     
 
