@@ -54,8 +54,7 @@ class PacMan:
     commandQueue = []
     Experiment_Dir = output_dir
 
-    def __init__(self):    
-        
+    def __init__(self):           
         try:
             self.IPam = IRHM.AIPam()
         except ConnectionError as e:
@@ -63,10 +62,13 @@ class PacMan:
             cleanup()
             sys.exit()
         use_Serial = True
-        if(use_Serial):
-            self.StageCom = SCM.SC()
+        if(DEBUG):
+            self.StageCom = 0
         else:
-            self.StageCom = PycroCom.PCMCom()
+            if(use_Serial):   
+                self.StageCom = SCM.SC()
+            else:
+                self.StageCom = PycroCom.PCMCom()
         self.cancel_flag = False
         self.AF = True
         self.commandQueue = []

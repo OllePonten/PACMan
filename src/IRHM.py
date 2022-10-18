@@ -62,6 +62,10 @@ class AIPam:
                 self.silence( True)
             except OSError as err:
                 print("Variable error {0}:".format(err))      
+            except TypeError as err:
+                print(f"Failed with starting with dynamic: {dyn}. Trying with dynamic: {not dyn}")
+                self.AutoIPam = ctClient.CreateObject("ImagingWin.AutoIPam", dynamic = not dyn)     
+
                 
                 
         def initialize_connection(self, dyn = False):

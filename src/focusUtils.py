@@ -138,10 +138,10 @@ def AF_Scoring(IMGs, AF = None,xticks=None,fp=None,plot=False):
     import ipdb
     if AF is None:
         AF = AFM.AFMan(len(IMGs),1,LPL=True,PLLS=True)
-    AF.computeInitialSetup([IMGs[0]],True)
+    AF.compute_initial_setup([IMGs[0]],True)
     print("Init done")
     for idx,img in enumerate(IMGs[1:]):
-        AF.performAutofocus(img, idx+1, 0, True)
+        AF.do_autofocus(img, idx+1, 0, True)
         #AF.calc_score()
     if(xticks is None):
         xticks = range(0,len(IMGs)-1)
@@ -208,10 +208,10 @@ def single_pos_Autofocus(IPAM, InitImg, factor, AF = None):
     #single_pos_Autofocus(IPAMR,imgsrc,1)
     if AF is None:
         AF = AFM.AFMan(1,10)
-    AF.computeInitialSetup([InitImg],True)
+    AF.compute_initial_setup([InitImg],True)
     for i in range(100):
          time.sleep(2.0)
-         dz = AF.performAutofocus(IPAM,1,0,True)
+         dz = AF.do_autofocus(IPAM,1,0,True)
          print(str(i) + "\t" + str(dz))
          correction = factor*dz
          SC.move_focus(correction)
