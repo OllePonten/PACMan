@@ -63,6 +63,7 @@ class PacMan:
     AutoFocuser = None
     log_Positions = False
     commandQueue = []
+    rtCommandQueue = []
     Experiment_Dir = output_dir
 
     def __init__(self):           
@@ -83,6 +84,7 @@ class PacMan:
         self.cancel_flag = False
         self.AF = True
         self.commandQueue = []
+        self.rtCommandQueue = []
         
     def run_experiment(self, tk_ptr,exp_Settings , Debug = True):
         """
@@ -152,20 +154,7 @@ class PacMan:
             if(not self.cancel_flag):
                 if(len(self.commandQueue[Current_Iteration])>0):
                     for com in self.commandQueue[Current_Iteration]:
-                        logmsg(f"Executing command {com.com} with parameter {com.parameter}",True)
-                        if(com.Target == External_Components.Internal and com.command == "TempSep") 
-                            logmsg(f"Changing temporal separation to: {com.parameter} seconds",True)
-                            temp_sep = int(com[1])
-                        if(com.Target == External_Components.Internal and com.command == "IterSep") 
-                            logmsg(f"Changing iteration wait time to: {com.parameter} seconds",True)
-                            experiment_Intervall = int(com.parameter)
-                        if(com.Target == External_Components.IPAM):
-                            logmsg(f"Sending IPAM command: {com.command} with parameter {com.paramater}",True)
-                            print(self.IPam.send_command(com.command, com.parameter))
-                        if(com.Target == External_Componnets.StageCom):
-                            logmsg(f"Sending Stage command: {com.command} with parameter {com.paramater}",True)
-                            self.SCM.msg_resp(','.join(com.command,com.parameter))
-            
+
                 self.IPam.send_command('ML','On')
                 self.waiting(5)
                 logmsg(f"Running repetition number: {Current_Iteration+1}/{experiment_iterations}", True)
@@ -302,14 +291,36 @@ class PacMan:
         if (starttime is None):
             starttime = int(round(time.time()))
         ctime = int(round(time.time()))
+        remcoms = []
         while (ctime < (starttime + (intervall)) and self.cancel_flag == False):
             ctime = int(round(time.time()))
-            time.sleep(1/15) #Sleep 1/15th of a second
+            time.sleep(1/20) #Sleep 1/25th of a second
             gui_ptr.update()
+            #Inefficient lol
+            for com in self.rtCommandQueue:
+                if(com.Trigger*60+starttime>ctime):
+                    apply_command(com)
+                    remcom.append(com)
+            [self.rtCommandQueue.remove(remcom) for remcom in remcoms]
             if(self.cancel_flag == True):
                 return False
         return True
-
+    
+    def apply_command(self,command):
+        logmsg(f"Executing command {com.com} with parameter {com.parameter}",True)
+        if(com.Target == External_Components.Internal and com.command == "TempSep") 
+            logmsg(f"Changing temporal separation to: {com.parameter} seconds",True)
+            temp_sep = int(com[1])
+        if(com.Target == External_Components.Internal and com.command == "IterSep") 
+            logmsg(f"Changing iteration wait time to: {com.parameter} seconds",True)
+            experiment_Intervall = int(com.parameter)
+        if(com.Target == External_Components.IPAM):
+            logmsg(f"Sending IPAM command: {com.command} with parameter {com.paramater}",True)
+            print(self.IPam.send_command(com.command, com.parameter))
+        if(com.Target == External_Componnets.StageCom):
+            logmsg(f"Sending Stage command: {com.command} with parameter {com.paramater}",True)
+            self.SCM.msg_resp(','.join(com.command,com.parameter))
+                    
     def reorder_iteration_images(self,exp_name, itr_no):
         """
         
@@ -392,8 +403,19 @@ class PacMan:
             while(total_reps < rep):
                 self.commandQueue.append([])
         #Assumes formatting of: Target,T/I,trigger,command,optional parameter
-        command_string = command_string.replace(' ','')
+        command_string = command_string.replace(' ','')        
         command = command_string.split(',')
+        if("R" in command[1]):
+            Realtime=True
+        elif("I" in command[1]):
+            Realtime=False
+        else:
+            Realtime=False
+            logmsg("No R/I parameter given. Assuming iterations.")
+            if(len(command) == 4):
+                command.insert("I",1)
+        if(len(command)<5 or len(command)>6):
+            raise ValueError(f"Improperly formatted command: {command}. Kindly format according to: Queue: {target}, {R/I}, {Trigger},{Command},{Parameter}")
         target = None
         #Have we a defined external component to direct this command to?
         if(command[0] in [c.name for c in External_Components]):
@@ -404,22 +426,18 @@ class PacMan:
             raise ValueError(f"No appropriate target for command: {command_string}")
             
         #Do after a certain point of time
-        if("T" in command[1]):
-            Realtime=True
-        elif("I" in command[1]):
-            Realtime=False
+        
+        
+        if(Realtime)
+            self.rtCommandQueue.append(QueuedCommand(target=target,Trigger=command[2],command=command[3]),parameter=command[4])
         else:
-            logmsg("No R/I parameter given. Assuming iterations.")
-        
-        self.commandQueue[rep].append(QueuedCommand(target = target,Trigger = command[2],Realtime=Realtime, command = command[3], parameter=command[5]))
-        
+            self.commandQueue[rep].append(QueuedCommand(target = target,Trigger = command[2], command = command[3], parameter=command[4]))
 
 @dataclass
 class QueuedCommand:
     target: External_Components
     command: str
     parameter: str
-    Realtime: bool
     Trigger: int
 
 #Remove old hanging imagingwin instance
