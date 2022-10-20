@@ -134,14 +134,11 @@ def send_serial_command():
    #w.ser_com_ent.set("")
    if("log:" in msg[0:5]):
        PacMan.logmsg(msg)
-   elif("Queue:" in msg[0:7]):
-       #Format: Timer: Repetition,Command,Parameter   
-       #Custom commands: TempSep,{seconds}
-       #
-       timer_cmd = msg[6:].split(",")
+   elif("Queue:" in msg[0:6]):
+       timer_cmd = msg[6:]
        try:
-           PacMan.logmsg(f"Queing following command:{timer_cmd[1]}, {timer_cmd[2]} to repetition {timer_cmd[0]}")
-           PacManHndl.add_command(int(timer_cmd[0]), timer_cmd[1:3])
+           PacMan.logmsg(f"Queing following command:{timer_msg}")
+           PacManHndl.queue_command(timer_msg)
        except Exception as e:
            exception_handler(e)
    elif("IPAM:" in msg[0:6]):

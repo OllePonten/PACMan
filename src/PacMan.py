@@ -22,6 +22,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Contact: olle.ponten@gmail.com
 
 """
+
+from dataclasses import dataclass
+
 import SCM
 import IRHM
 import AFM
@@ -44,6 +47,14 @@ global ADAPTIVE_POSITIONING, DEBUG, AUTOFOCUS_ROUNDS
 ADAPTIVE_POSITIONING = False
 DEBUG = True
 AUTOFOCUS_ROUNDS = 1
+
+from enum import Enum
+class External_Components(Enum):
+    StageCom = 1
+    IPAM = 2
+    #Lighting = 3
+    #Pumps = 4
+    Internal = 0
 
 class PacMan:   
     StageCom = None
@@ -141,14 +152,20 @@ class PacMan:
             if(not self.cancel_flag):
                 if(len(self.commandQueue[Current_Iteration])>0):
                     for com in self.commandQueue[Current_Iteration]:
-                        logmsg(f"Executing command {com[0]} with parameter {com[1]}",True)
-                        if("TempSep" in com[0]):
-                            logmsg(f"Changing temporal separation to: {com[1]} seconds",True)
+                        logmsg(f"Executing command {com.com} with parameter {com.parameter}",True)
+                        if(com.Target == External_Components.Internal and com.command == "TempSep") 
+                            logmsg(f"Changing temporal separation to: {com.parameter} seconds",True)
                             temp_sep = int(com[1])
-                        elif("IterSep" in com[0]):
-                            logmsg(f"Changing iteration wait time to: {com[1]} seconds",True)
-                            experiment_Intervall = int(com[1])
-                        print(self.IPam.send_command(com[0], com[1]))
+                        if(com.Target == External_Components.Internal and com.command == "IterSep") 
+                            logmsg(f"Changing iteration wait time to: {com.parameter} seconds",True)
+                            experiment_Intervall = int(com.parameter)
+                        if(com.Target == External_Components.IPAM):
+                            logmsg(f"Sending IPAM command: {com.command} with parameter {com.paramater}",True)
+                            print(self.IPam.send_command(com.command, com.parameter))
+                        if(com.Target == External_Componnets.StageCom):
+                            logmsg(f"Sending Stage command: {com.command} with parameter {com.paramater}",True)
+                            self.SCM.msg_resp(','.join(com.command,com.parameter))
+            
                 self.IPam.send_command('ML','On')
                 self.waiting(5)
                 logmsg(f"Running repetition number: {Current_Iteration+1}/{experiment_iterations}", True)
@@ -209,23 +226,10 @@ class PacMan:
             pos_coords = current_Position[1]
             if printLog:
                 logmsg(f"Moving to position {pos_idx+1}/{SC.get_pos_list_length()}",True)
-            if(SC.check_encoder() == False):
-                time.sleep(1.0)
-                SC.restore_to_z(pos_coords[2])
-                time.sleep(1.0)
-                SC.focus_loss_counter += 1
             (curx,cury,curz) = SC.get_current_position()
             if(SC.get_pos_list_length() > 1 or (abs(curx-pos_coords[0]) < 3 and abs(cury-pos_coords[1]) < 3 and abs(curz-pos_coords[2]) < 1)):
                 SC.go_to_position(pos_coords)
             time.sleep(1.0)
-            #Make sure our initial position is as close as possible to original position
-            if(iteration == 0):       
-                z_dif = SC.get_focus() - pos_coords[2]
-                print(f"Missed with: {z_dif}")
-                if(abs(z_dif) > 1.5):
-                    SC.move_Focus(z_dif)
-                    print("Attempting to compensate")
-                time.sleep(2.5)
             else:
                 if(AFMan is not None and AFMan.AFOn):
                 #Apply previous correction if it is large enough.
@@ -382,12 +386,41 @@ class PacMan:
     def add_position(self, pos):
        SCM.add_pos(pos)
         
-    def add_command(self,rep,com):
+    def queue_command(self,command_string):
         if(len(self.commandQueue) < rep):
             total_reps = rep
             while(total_reps < rep):
                 self.commandQueue.append([])
-        self.commandQueue[rep].append(com)
+        #Assumes formatting of: Target,T/I,trigger,command,optional parameter
+        command_string = command_string.replace(' ','')
+        command = command_string.split(',')
+        target = None
+        #Have we a defined external component to direct this command to?
+        if(command[0] in [c.name for c in External_Components]):
+            target = External_Components[comnand[0]]
+        elif(command[0] == "TempSep" or command[0] == "IterSep"):
+            target = External_Components.Internal            
+        else:
+            raise ValueError(f"No appropriate target for command: {command_string}")
+            
+        #Do after a certain point of time
+        if("T" in command[1]):
+            Realtime=True
+        elif("I" in command[1]):
+            Realtime=False
+        else:
+            logmsg("No R/I parameter given. Assuming iterations.")
+        
+        self.commandQueue[rep].append(QueuedCommand(target = target,Trigger = command[2],Realtime=Realtime, command = command[3], parameter=command[5]))
+        
+
+@dataclass
+class QueuedCommand:
+    target: External_Components
+    command: str
+    parameter: str
+    Realtime: bool
+    Trigger: int
 
 #Remove old hanging imagingwin instance
 def cleanup():
@@ -444,6 +477,9 @@ def logmsg(msg, toFile = False, toGUI = True):
 def get_file_path():
     return output_dir
     
+    
+
+
 if __name__ == '__main__':
     pacmangui.start()
     print("Exited")
