@@ -151,13 +151,13 @@ class PacMan:
         self.IPam.send_command('ML','Off')
         self.waiting(intervall = experiment_Intervall)
         for Current_Iteration in range(experiment_iterations): 
+            logmsg(f"Running repetition number: {Current_Iteration+1}/{experiment_iterations}", True)
             if(not self.cancel_flag):
                 if(len(self.commandQueue[Current_Iteration])>0):
                     for com in self.commandQueue[Current_Iteration]:
-
+                        self.apply_command(com)
                 self.IPam.send_command('ML','On')
                 self.waiting(5)
-                logmsg(f"Running repetition number: {Current_Iteration+1}/{experiment_iterations}", True)
                 self.IPam.send_command("New Record","")
                 self.execute_acquisition(temp_Sep = temp_sep, script_Args = [False,experiment_name,Current_Iteration])
                 logmsg(f"Successfully completed acquisiton, now waiting for {experiment_Intervall} s", True)
@@ -216,35 +216,30 @@ class PacMan:
             if printLog:
                 logmsg(f"Moving to position {pos_idx+1}/{SC.get_pos_list_length()}",True)
             (curx,cury,curz) = SC.get_current_position()
-            if(SC.get_pos_list_length() > 1 or (abs(curx-pos_coords[0]) < 3 and abs(cury-pos_coords[1]) < 3 and abs(curz-pos_coords[2]) < 1)):
-                SC.go_to_position(pos_coords)
+            SC.go_to_position(pos_coords)
             time.sleep(1.0)
-            else:
-                if(AFMan is not None and AFMan.AFOn):
-                #Apply previous correction if it is large enough.
-                    prev_cor = AFMan.corrections[iteration-1,pos_idx]
-                    if(prev_cor > 3 and ADAPTIVE_POSITIONING == True):
-                        SC.move_focus(prev_cor/3)
-                        print(f"Applying old correction/3: {prev_cor/3}")
-                        SC.Pos_List[pos_idx][0][2] += prev_cor/3
-                    for i in range(AUTOFOCUS_ROUNDS):      
-                        print(f"Entering autofocus step {i+1}")
+            if(AFMan is not None and AFMan.AFOn):
+            #Apply previous correction if it is large enough.
+                prev_cor = AFMan.corrections[iteration-1,pos_idx]
+                if(prev_cor > 3 and ADAPTIVE_POSITIONING == True):
+                    SC.move_focus(prev_cor/3)
+                    print(f"Applying old correction/3: {prev_cor/3}")
+                    SC.Pos_List[pos_idx][0][2] += prev_cor/3
+                for i in range(AUTOFOCUS_ROUNDS):      
+                    print(f"Entering autofocus step {i+1}")
+                    z_dif = 0
+                    try:
+                        z_dif = AFMan.perform_Autofocus(IPRH,iteration, pos_idx, True)
+                    except Exception as e:
+                        logmsg(f"Autofocus failed: {e}. \nSwitching off autofocus", True)
                         z_dif = 0
-                        try:
-                            z_dif = AFMan.perform_Autofocus(IPRH,iteration, pos_idx, True)
-                        except Exception as e:
-                            logmsg(f"Autofocus failed: {e}. Switching off autofocus", True)
-                            z_dif = 0
-                            AFMan.AFOn = False
-                        if(abs(z_dif) < 20):
-                            SC.move_focus(z_dif)   
-                            #Apply correction for next round
-                            SC.offset_z(pos_idx,z_dif)
-                        else:
-                            z_dif = z_dif/3
-                            SC.move_focus(z_dif)
-                    else:
-                        time.sleep(3.0)
+                        AFMan.AFOn = False
+                    #In case of position loss, so it doesn't crash into something.
+                    if(abs(z_dif) < 10):
+                        SC.move_focus(z_dif)   
+                        #Apply correction for next round
+                        SC.offset_z(pos_idx,z_dif)
+                    time.sleep(1.0)
             try:
                 time.sleep(6.5)
                 iter_Positions[pos_idx] = SC.get_current_position(True)
@@ -308,10 +303,10 @@ class PacMan:
     
     def apply_command(self,command):
         logmsg(f"Executing command {com.com} with parameter {com.parameter}",True)
-        if(com.Target == External_Components.Internal and com.command == "TempSep") 
+        if(com.Target == External_Components.Internal and com.command == "TempSep"):
             logmsg(f"Changing temporal separation to: {com.parameter} seconds",True)
             temp_sep = int(com[1])
-        if(com.Target == External_Components.Internal and com.command == "IterSep") 
+        if(com.Target == External_Components.Internal and com.command == "IterSep"): 
             logmsg(f"Changing iteration wait time to: {com.parameter} seconds",True)
             experiment_Intervall = int(com.parameter)
         if(com.Target == External_Components.IPAM):
@@ -398,37 +393,39 @@ class PacMan:
        SCM.add_pos(pos)
         
     def queue_command(self,command_string):
-        if(len(self.commandQueue) < rep):
-            total_reps = rep
-            while(total_reps < rep):
-                self.commandQueue.append([])
-        #Assumes formatting of: Target,T/I,trigger,command,optional parameter
         command_string = command_string.replace(' ','')        
         command = command_string.split(',')
         if("R" in command[1]):
             Realtime=True
         elif("I" in command[1]):
             Realtime=False
+            rep = int(command[1])
+            if(len(self.commandQueue) < rep):
+                total_reps = rep
+                while(total_reps < rep):
+                    self.commandQueue.append([])
         else:
             Realtime=False
             logmsg("No R/I parameter given. Assuming iterations.")
             if(len(command) == 4):
                 command.insert("I",1)
+        
+        #Assumes formatting of: Target,T/I,trigger,command,optional parameter
+
+
         if(len(command)<5 or len(command)>6):
-            raise ValueError(f"Improperly formatted command: {command}. Kindly format according to: Queue: {target}, {R/I}, {Trigger},{Command},{Parameter}")
+            raise ValueError(f"Improperly formatted command: {command}. Kindly format according to: Queue: target, R/I, Trigger,Command,Parameter")
         target = None
         #Have we a defined external component to direct this command to?
         if(command[0] in [c.name for c in External_Components]):
-            target = External_Components[comnand[0]]
+            target = External_Components[command[0]]
         elif(command[0] == "TempSep" or command[0] == "IterSep"):
             target = External_Components.Internal            
         else:
             raise ValueError(f"No appropriate target for command: {command_string}")
             
-        #Do after a certain point of time
-        
-        
-        if(Realtime)
+        #Place in RT queue if RT.
+        if(Realtime):
             self.rtCommandQueue.append(QueuedCommand(target=target,Trigger=command[2],command=command[3]),parameter=command[4])
         else:
             self.commandQueue[rep].append(QueuedCommand(target = target,Trigger = command[2], command = command[3], parameter=command[4]))
