@@ -294,14 +294,14 @@ class PacMan:
             #Inefficient lol
             for com in self.rtCommandQueue:
                 if(com.Trigger*60+starttime>ctime):
-                    apply_command(com)
-                    remcom.append(com)
+                    self.apply_command(com)
+                    self.remcom.append(com)
             [self.rtCommandQueue.remove(remcom) for remcom in remcoms]
             if(self.cancel_flag == True):
                 return False
         return True
     
-    def apply_command(self,command):
+    def apply_command(self,com):
         logmsg(f"Executing command {com.com} with parameter {com.parameter}",True)
         if(com.Target == External_Components.Internal and com.command == "TempSep"):
             logmsg(f"Changing temporal separation to: {com.parameter} seconds",True)
@@ -312,7 +312,7 @@ class PacMan:
         if(com.Target == External_Components.IPAM):
             logmsg(f"Sending IPAM command: {com.command} with parameter {com.paramater}",True)
             print(self.IPam.send_command(com.command, com.parameter))
-        if(com.Target == External_Componnets.StageCom):
+        if(com.Target == External_Components.StageCom):
             logmsg(f"Sending Stage command: {com.command} with parameter {com.paramater}",True)
             self.SCM.msg_resp(','.join(com.command,com.parameter))
                     
