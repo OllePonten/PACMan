@@ -25,10 +25,10 @@ Contact: olle.ponten@gmail.com
 
 from dataclasses import dataclass
 
-import SCM
-import IRHM
-import AFM
-import pacmangui
+from managers import SCM
+from managers import IRHM
+from managers import pacmangui as pacmangui
+from utils import utils
 import tifffile
 import skimage
 import skimage.io
@@ -45,7 +45,7 @@ output_dir = 'C:\ImagingPamGigE\Data_RGB'
 
 global ADAPTIVE_POSITIONING, DEBUG, AUTOFOCUS_ROUNDS
 ADAPTIVE_POSITIONING = False
-DEBUG = True
+DEBUG = False
 AUTOFOCUS_ROUNDS = 1
 
 from enum import Enum
@@ -57,6 +57,7 @@ class External_Components(Enum):
     Internal = 0
 
 class PacMan:   
+    global DEBUG
     StageCom = None
     IPam = None
     pQueue = None
@@ -66,7 +67,7 @@ class PacMan:
     rtCommandQueue = []
     Experiment_Dir = output_dir
 
-    def __init__(self):           
+    def __init__(self, with_gui = False):           
         try:
             self.IPam = IRHM.AIPam()
         except ConnectionError as e:
@@ -74,17 +75,22 @@ class PacMan:
             cleanup()
             sys.exit()
         use_Serial = True
-        if(DEBUG):
-            self.StageCom = 0
-        else:
+        try: 
             if(use_Serial):   
                 self.StageCom = SCM.SC()
             else:
                 self.StageCom = PycroCom.PCMCom()
+        except:
+            print("Cannot connect to StageManager, assuming debugging. SCM disabled.")
+            DEBUG = True
+            self.StageCom = 0
         self.cancel_flag = False
         self.AF = True
         self.commandQueue = []
         self.rtCommandQueue = []
+        if(with_gui):
+            pacmangui.start(self)
+        
         
     def run_experiment(self, tk_ptr,exp_Settings , Debug = True):
         """
@@ -125,17 +131,13 @@ class PacMan:
         #Create a list of lists with one lit for every repetition done.
         for i in range(experiment_iterations):
             self.commandQueue.append([])
-        logmsg(f"Started Experiment: {experiment_name}", True)
-        logmsg(f"Settings: Iterations: {experiment_iterations} Intervall(s): {experiment_Intervall}. Temporal separation(s): {temp_sep}. Dark adaption: {self.dark_adapt_Flag}" ,True)    
-        if(self.AF):
-            self.AutoFocuser = AFM.AFMan(experiment_iterations,self.StageCom.get_pos_list_length(), self.AF,True,True)
-            pacmangui.load_AF()
-            logmsg(self.AutoFocuser.GUIGetParams(),True)
+        utils.logmsg(f"Started Experiment: {experiment_name}", True)
+        utils.logmsg(f"Settings: Iterations: {experiment_iterations} Intervall(s): {experiment_Intervall}. Temporal separation(s): {temp_sep}. Dark adaption: {self.dark_adapt_Flag}" ,True)    
         if(self.dark_adapt_Flag):
             self.IPam.send_command('ML','Off')
-            logmsg("Dark adapting for 30 minutes")
+            utils.logmsg("Dark adapting for 30 minutes")
             self.waiting(1800)
-        logmsg(self.StageCom.retrieve_pos_list(),True)
+        utils.logmsg(self.StageCom.retrieve_pos_list(),True)
         for i,iteration in enumerate(self.commandQueue):
             if(len(iteration)>0):
                 print(f"Scheduled commands to run at iteration {i}")
@@ -147,11 +149,11 @@ class PacMan:
         #Compute initial setup.
         if(self.AF):
             self.AutoFocuser.compute_initial_setup(self.save_initial_imgs(experiment_name),True)
-        logmsg("Starting up first wait intervall after initial imgs.")
+        utils.logmsg("Starting up first wait intervall after initial imgs.")
         self.IPam.send_command('ML','Off')
         self.waiting(intervall = experiment_Intervall)
         for Current_Iteration in range(experiment_iterations): 
-            logmsg(f"Running repetition number: {Current_Iteration+1}/{experiment_iterations}", True)
+            utils.logmsg(f"Running repetition number: {Current_Iteration+1}/{experiment_iterations}", True)
             if(not self.cancel_flag):
                 if(len(self.commandQueue[Current_Iteration])>0):
                     for com in self.commandQueue[Current_Iteration]:
@@ -160,7 +162,7 @@ class PacMan:
                 self.waiting(5)
                 self.IPam.send_command("New Record","")
                 self.execute_acquisition(temp_Sep = temp_sep, script_Args = [False,experiment_name,Current_Iteration])
-                logmsg(f"Successfully completed acquisiton, now waiting for {experiment_Intervall} s", True)
+                utils.logmsg(f"Successfully completed acquisiton, now waiting for {experiment_Intervall} s", True)
                 self.reorder_iteration_images(experiment_name, Current_Iteration)
                 starttime = int(round(time.time()))
                 #Update progress bar
@@ -171,13 +173,13 @@ class PacMan:
                 self.waiting(intervall = experiment_Intervall, starttime = starttime)
             else:
                 #Handle cancellation
-                logmsg("Experiment cancelled",True)
+                utils.logmsg("Experiment cancelled",True)
                 self.IPam.send_command('ML','Off')
                 #self.StageCom.clear_pos_list()
                 self.commandQueue.clear()
                 tk_ptr.cancel_exp()
                 break
-        logmsg("Experiment complete",True)
+        utils.logmsg("Experiment complete",True)
         self.StageCom.prior_command("SERVO,0")
 
     def execute_acquisition(self, script_Args, temp_Sep = 0, printLog = True):
@@ -200,7 +202,6 @@ class PacMan:
         global output_dir
         IPRH = self.IPam
         SC = self.StageCom
-        AFMan = self.AutoFocuser
         iter_Positions = None
         if(self.log_Positions_flag):
             iter_Positions = [None] * SC.get_pos_list_length()
@@ -214,42 +215,20 @@ class PacMan:
             pos_lbl = current_Position[0]
             pos_coords = current_Position[1]
             if printLog:
-                logmsg(f"Moving to position {pos_idx+1}/{SC.get_pos_list_length()}",True)
+                utils.logmsg(f"Moving to position {pos_idx+1}/{SC.get_pos_list_length()}",True)
             (curx,cury,curz) = SC.get_current_position()
             SC.go_to_position(pos_coords)
             time.sleep(1.0)
-            if(AFMan is not None and AFMan.AFOn):
-            #Apply previous correction if it is large enough.
-                prev_cor = AFMan.corrections[iteration-1,pos_idx]
-                if(prev_cor > 3 and ADAPTIVE_POSITIONING == True):
-                    SC.move_focus(prev_cor/3)
-                    print(f"Applying old correction/3: {prev_cor/3}")
-                    SC.Pos_List[pos_idx][0][2] += prev_cor/3
-                for i in range(AUTOFOCUS_ROUNDS):      
-                    print(f"Entering autofocus step {i+1}")
-                    z_dif = 0
-                    try:
-                        z_dif = AFMan.perform_Autofocus(IPRH,iteration, pos_idx, True)
-                    except Exception as e:
-                        logmsg(f"Autofocus failed: {e}. \nSwitching off autofocus", True)
-                        z_dif = 0
-                        AFMan.AFOn = False
-                    #In case of position loss, so it doesn't crash into something.
-                    if(abs(z_dif) < 10):
-                        SC.move_focus(z_dif)   
-                        #Apply correction for next round
-                        SC.offset_z(pos_idx,z_dif)
-                    time.sleep(1.0)
             try:
                 time.sleep(6.5)
                 iter_Positions[pos_idx] = SC.get_current_position(True)
                 rc = IPRH.execute_queue(script_Args + [pos_lbl])
             except Exception as e:
-                logmsg(f"Unkown exception occured while trying to run position script, {e}",True)
+                utils.logmsg(f"Unkown exception occured while trying to run position script, {e}",True)
             else:
                 print(f"Position script completed with return code: {rc}") 
             if(temp_Sep > 0):
-                logmsg(f"Waiting for {temp_Sep} seconds due to temporal separation")
+                utils.logmsg(f"Waiting for {temp_Sep} seconds due to temporal separation")
                 if(self.waiting(temp_Sep) == False):
                     return
         #Log positions
@@ -302,18 +281,18 @@ class PacMan:
         return True
     
     def apply_command(self,com):
-        logmsg(f"Executing command {com.com} with parameter {com.parameter}",True)
+        utils.logmsg(f"Executing command {com.com} with parameter {com.parameter}",True)
         if(com.Target == External_Components.Internal and com.command == "TempSep"):
-            logmsg(f"Changing temporal separation to: {com.parameter} seconds",True)
+            utils.logmsg(f"Changing temporal separation to: {com.parameter} seconds",True)
             temp_sep = int(com[1])
         if(com.Target == External_Components.Internal and com.command == "IterSep"): 
-            logmsg(f"Changing iteration wait time to: {com.parameter} seconds",True)
+            utils.logmsg(f"Changing iteration wait time to: {com.parameter} seconds",True)
             experiment_Intervall = int(com.parameter)
         if(com.Target == External_Components.IPAM):
-            logmsg(f"Sending IPAM command: {com.command} with parameter {com.paramater}",True)
+            utils.logmsg(f"Sending IPAM command: {com.command} with parameter {com.paramater}",True)
             print(self.IPam.send_command(com.command, com.parameter))
         if(com.Target == External_Components.StageCom):
-            logmsg(f"Sending Stage command: {com.command} with parameter {com.paramater}",True)
+            utils.logmsg(f"Sending Stage command: {com.command} with parameter {com.paramater}",True)
             self.SCM.msg_resp(','.join(com.command,com.parameter))
                     
     def reorder_iteration_images(self,exp_name, itr_no):
@@ -406,7 +385,7 @@ class PacMan:
                     self.commandQueue.append([])
         else:
             Realtime=False
-            logmsg("No R/I parameter given. Assuming iterations.")
+            utils.logmsg("No R/I parameter given. Assuming iterations.")
             if(len(command) == 4):
                 command.insert("I",1)
         
@@ -454,47 +433,11 @@ def cleanup():
         os.kill(processes['ImagingWin.exe'],9)
     cv2.destroyAllWindows() 
 
-
-msgbuffer = []
-def logmsg(msg, toFile = False, toGUI = True):
-    """
-    Logs message to GUI and text file
-
-    Parameters
-    ----------
-    msg : string
-        Message to log.
-    toFile : boolean, optional
-        Whether to write to log file or only to window console. The default is False.
-    toGUI : TYPE, optional
-        Whether to write to window console. The default is True.
-
-    Returns
-    -------
-    None.
-
-    """
-    global msgbuffer, output_dir, experiment    
-    if(toGUI):
-        pacmangui.top.log_lbl.configure(text = f"Log: {msg}")
-    T = datetime.now().strftime("%d/%m (%H:%M:%S)")
-    frmstr = f"T:{T}: {msg}"
-    if(toFile):
-        msgbuffer.append(frmstr)
-    print(frmstr)
-    if(len(msgbuffer) > 10 or "Experiment Finished" in msg or "Experiment cancelled" in msg):
-        fp = output_dir
-        with open(fp + "\\" + f"{experiment}_log.txt", mode='a') as file_object:
-            for msgiter in msgbuffer:
-                file_object.write('%s\n' % msgiter)   
-        msgbuffer.clear()
-
 def get_file_path():
     return output_dir
     
-    
-
 
 if __name__ == '__main__':
+    from managers import pacmangui
     pacmangui.start()
     print("Exited")

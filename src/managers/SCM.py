@@ -10,11 +10,12 @@ Made by Olle Pontén, Uppsala University for Behrendt Lab
 
 
 import time
-import PacMan
 import serial
 import sys
 import re
 
+#local imports
+from utils import utils
 
 global ser,COMPORT, resolution
 resolution = 0.1
@@ -23,10 +24,11 @@ resolution = 0.1
 class SC:    
     
     Pos_List = []
-    def __init__(self,COMPORT = 'COM1',debug=False):
+    def __init__(self,project_fp, COMPORT = 'COM1',debug=False):
+        self.proj_fp = project_fp
         self.DEBUG=debug
         self.split_symbol = '\r'
-        PacMan.logmsg("Trying to connect to Stage",True,False)
+        utils.logmsg("Trying to connect to Stage",True,False)
         global ser
         ser = self.prior_init(COMPORT)
         print(f"Serial connection to Prior initialized over Com: {COMPORT}.")
@@ -201,7 +203,7 @@ class SC:
         cur_P = self.msg_resp('P,e')[-1].split(",")
         time.sleep(0.5)
         cur_Ze = float(cur_P[2])*resolution
-        PacMan.logmsg(f"Encoder position dropped. Missmatch: {abs(cur_Ze-z_pos)}",True)
+        utils.logmsg(f"Encoder position dropped. Missmatch: {abs(cur_Ze-z_pos)}",True)
         self.init_encoder()
         time.sleep(0.5)
         self.set_Focus(cur_Ze)
@@ -541,7 +543,7 @@ class SC:
         if(fp == None or fp == ""):
             fp = "Pos.txt"
         try:
-            with open(PacMan.IWE_fp + '\\' + str(fp), mode = 'r') as positions_list:
+            with open(self.proj_fp + '\\' + str(fp), mode = 'r') as positions_list:
                 for line in positions_list:
                     pos = line.split(",")
                     #Make numbers
@@ -556,7 +558,7 @@ class SC:
         if(fp == None or fp == ""):
             fp = "Pos.txt"
         if(len(self.Pos_List) > 0):
-            with open(PacMan.IWE_fp + '\\' + str(fp),mode = 'w') as pos_file:
+            with open(self.proj_fp + '\\' + str(fp),mode = 'w') as pos_file:
                 for pos in self.Pos_List:
                     strcoords =  [str(coord) for coord in pos[0]]
                     outstr = str(pos[1]) + "," + ",".join(strcoords) + "\n"

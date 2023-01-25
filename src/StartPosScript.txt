@@ -1,4 +1,0 @@
-New Record,
-FvFm, 
-TimeStep,1
-Export to Tiff File = ,{Exp}_{lbl}

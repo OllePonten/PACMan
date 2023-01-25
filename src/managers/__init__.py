@@ -12,6 +12,3 @@ submodules = [
     'gui',
     'SCM',
 ]
-
-
-from .PacMan import PACMan

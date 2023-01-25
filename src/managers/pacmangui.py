@@ -19,7 +19,11 @@ except ImportError:
     
 import tkinter.filedialog
 import sys
-import PacMan, SCM
+import os
+if __name__ == '__main__':
+    import SCM
+else:
+    from . import SCM
 import tkinter.messagebox
 global ImagingWinPath
 ImagingWinPath = "C:/ImagingPamGigE/Data_RGB/"
@@ -36,8 +40,14 @@ def set_tk_var():
     pos_var = tk.StringVar()
     temp_sep_var = tk.IntVar()
 
-def start():
-    PCM = PacMan.PacMan()
+def start(P_ptr = None):
+    if(P_ptr is None):
+        path = os.getcwd()+"..\\"
+        sys.path.append(path)
+        import PacMan
+        PCM = PacMan.PacMan()
+    else:
+        PCM = P_ptr 
     vp_start_gui(PCM)
     PCM.IPam.load_acquisition_script()
     PCM.IPam.load_start_script()
@@ -57,13 +67,7 @@ def vp_start_gui(PCMHndl):
     set_tk_var()
     top = MainWnd (root,PMH = PCMHndl)
     #Ensure root window gets destroyed if top window gets closed
-    top.protocol("WM_DELETE_WINDOW", destroy_window)
-    
-def destroy_window():
-    # Function which closes the window.
-    global root
-    root.destroy()
-    root = None
+    top.protocol("WM_DELETE_WINDOW", root.destroy)
 
     
 def load_AF():
@@ -73,7 +77,6 @@ def load_AF():
         minCirc = float(window.minCirc_ent.get())
         minInert = float(window.minInert_ent.get())
         sizes = window.size_ent.get().split(',')
-        PacManHndl.AutoFocuser.GUI_set_parameters([Threshold,Strength,minCirc,minInert,int(sizes[0]),int(sizes[1])])
         PacMan.logmsg(f"Autofocus parameters changed to: {[Threshold,Strength,minCirc,minInert,int(sizes[0]),int(sizes[1])]}")
     except:
         print("One of the autofocus value was not correctly formmated")
@@ -110,14 +113,9 @@ def rld_mm():
         exception_handler(e)
 
 def rld_pos():
-    print('Reload pos list button pressed')
+    print('Reload pos script button pressed')
     try:
-        PacManHndl.StageCom.load_pos_list_file()
-        for i in range(len(PacManHndl.StageCom.Pos_List)):
-            showvar = PacManHndl.StageCom.get_pos(i)
-            formstring = f"{showvar[1]} \t {showvar[0]}"
-            window.pos_list.insert(tk.END,formstring)
-        window.pos_name_var.set(f"Pos{PacManHndl.StageCom.get_pos_list_length()}")
+        PacManHndl.IPam.load_acquisition_script()
     except Exception as e:
         exception_handler(e)
 
@@ -137,8 +135,8 @@ def send_serial_command():
    elif("Queue:" in msg[0:6]):
        timer_cmd = msg[6:]
        try:
-           PacMan.logmsg(f"Queing following command:{timer_msg}")
-           PacManHndl.queue_command(timer_msg)
+           PacMan.logmsg(f"Queing following command:{timer_cmd}")
+           PacManHndl.queue_command(timer_cmd)
        except Exception as e:
            exception_handler(e)
    elif("IPAM:" in msg[0:6]):
@@ -242,8 +240,11 @@ class MainWnd(tk.Toplevel):
         window = self
         top = self
         PacManHndl = PMH
-        self.icon = tk.PhotoImage(file = "PacMAN_LOGO_TRP.gif")
-        top.iconphoto(False, self.icon)
+        #self.icon = tk.PhotoImage(file = "PacMAN_LOGO_TRP.gif")
+        #top.iconphoto(False, self.icon)
+        icopath = os.path.abspath(__file__)[:-12]
+        icopath += "PacMAN_LOGO_TRP.ico"
+        self.iconbitmap(icopath)
         '''This class configures and populates the toplevel window.
            top is the toplevel containing window.'''
         _bgcolor = '#d9d9d9'  # X11 color: 'gray85'
@@ -273,7 +274,7 @@ class MainWnd(tk.Toplevel):
         self.main_tab = ttk.Frame(self.tabControl)
         self.tabControl.add(self.main_tab,text="Main")
         self.autofocus_tab = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.autofocus_tab, text = "Autofocus")
+        self.tabControl.add(self.autofocus_tab, text = "Autofocus",state="disabled")
         self.positions_tab = ttk.Frame(self.tabControl)
         self.tabControl.add(self.positions_tab, text = "Positions")
         
@@ -618,8 +619,23 @@ class MainWnd(tk.Toplevel):
         #self.settings_frm.configure(highlightbackground="#d9d9d9")
         #self.settings_frm.configure(highlightcolor="black")
 
+        
+        
+        self.yield_btn = tk.Button(self.settings_frm)
+        self.yield_btn.place(relx=0.1, rely=0.1, height=20, width=140)
+        self.yield_btn.configure(activebackground="#ececec")
+        self.yield_btn.configure(activeforeground="#000000")
+        self.yield_btn.configure(background="#d9d9d9")
+        self.yield_btn.configure(command= lambda: snap_img)
+        self.yield_btn.configure(disabledforeground="#a3a3a3")
+        self.yield_btn.configure(foreground="#000000")
+        self.yield_btn.configure(highlightbackground="#d9d9d9")
+        self.yield_btn.configure(highlightcolor="black")
+        self.yield_btn.configure(pady="0")
+        self.yield_btn.configure(text='''Yield''')  
+
         self.run_z_stack_btn = tk.Button(self.settings_frm)
-        self.run_z_stack_btn.place(relx=0.1, rely=0.45, height=20, width=140)
+        self.run_z_stack_btn.place(relx=0.1, rely=0.35, height=20, width=140)
         self.run_z_stack_btn.configure(activebackground="#ececec")
         self.run_z_stack_btn.configure(activeforeground="#000000")
         self.run_z_stack_btn.configure(background="#d9d9d9")
@@ -632,33 +648,32 @@ class MainWnd(tk.Toplevel):
         self.run_z_stack_btn.configure(text='''Make Z-Stack''') 
         self.run_z_stack_btn_tooltip = \
         ToolTip(self.run_z_stack_btn, self.tooltip_font, '''Give step and extent as "step,extent" ''')
-        
-        self.yield_btn = tk.Button(self.settings_frm)
-        self.yield_btn.place(relx=0.1, rely=0.2, height=20, width=140)
-        self.yield_btn.configure(activebackground="#ececec")
-        self.yield_btn.configure(activeforeground="#000000")
-        self.yield_btn.configure(background="#d9d9d9")
-        self.yield_btn.configure(command= lambda: snap_img)
-        self.yield_btn.configure(disabledforeground="#a3a3a3")
-        self.yield_btn.configure(foreground="#000000")
-        self.yield_btn.configure(highlightbackground="#d9d9d9")
-        self.yield_btn.configure(highlightcolor="black")
-        self.yield_btn.configure(pady="0")
-        self.yield_btn.configure(text='''Yield''')  
-
 
         self.run_start_btn = tk.Button(self.settings_frm)
-        self.run_start_btn.place(relx=0.1, rely=0.70, height=20, width=140)
+        self.run_start_btn.place(relx=0.1, rely=0.6, height=20, width=140)
         self.run_start_btn.configure(activebackground="#ececec")
         self.run_start_btn.configure(activeforeground="#000000")
         self.run_start_btn.configure(background="#d9d9d9")
-        self.run_start_btn.configure(command=run_start)
+        self.run_start_btn.configure(command=lambda:run_start())
         self.run_start_btn.configure(disabledforeground="#a3a3a3")
         self.run_start_btn.configure(foreground="#000000")
         self.run_start_btn.configure(highlightbackground="#d9d9d9")
         self.run_start_btn.configure(highlightcolor="black")
         self.run_start_btn.configure(pady="0")
-        self.run_start_btn.configure(text='''Run Start Script''')       
+        self.run_start_btn.configure(text='''Run Start Script''')   
+        
+        self.run_acq_btn = tk.Button(self.settings_frm)
+        self.run_acq_btn.place(relx=0.1, rely=0.85, height=20, width=140)
+        self.run_acq_btn.configure(activebackground="#ececec")
+        self.run_acq_btn.configure(activeforeground="#000000")
+        self.run_acq_btn.configure(background="#d9d9d9")
+        self.run_acq_btn.configure(command=lambda:run_pos())
+        self.run_acq_btn.configure(disabledforeground="#a3a3a3")
+        self.run_acq_btn.configure(foreground="#000000")
+        self.run_acq_btn.configure(highlightbackground="#d9d9d9")
+        self.run_acq_btn.configure(highlightcolor="black")
+        self.run_acq_btn.configure(pady="0")
+        self.run_acq_btn.configure(text='''Run Acquisition Script''')   
 
         self.exp_progress = ttk.Progressbar(top, mode = 'determinate')
         self.exp_progress.place(relx=0.08, rely=0.85, relwidth=0.40 , height=22)
@@ -860,7 +875,7 @@ class MainWnd(tk.Toplevel):
 
         self.settings_menubar  = tk.Menu(self.menubar, tearoff = 0)
         self.settings_menubar.add_command(
-                label="Select Experiment Directory", command = lambda: PacManHndl.select_exp_dir(ttk.filedialog.askdirectory(mustexist = True)))
+                label="Select Experiment Directory", command = lambda: PacManHndl.select_exp_dir(tk.filedialog.askdirectory(mustexist = True)))
         self.settings_menubar.add_command(
                 label="Set communications port (SCM)", command = lambda: self.changeComPort("SCM"))
         self.settings_menubar.add_command(
@@ -874,9 +889,9 @@ class MainWnd(tk.Toplevel):
         self.script_menubar.add_command(
                 label="Run acquistion Script", command = lambda: rld_pos())
         self.script_menubar.add_command(
-                label="Select Start Script", command = lambda: PacManHndl.set_start_script(ttk.filedialog.askopenfilename()))
+                label="Select Start Script", command = lambda: PacManHndl.set_start_script(tk.filedialog.askopenfilename()))
         self.script_menubar.add_command(
-                label="Select Position Script", command = lambda: PacManHndl.set_pos_script(ttk.filedialog.askopenfilename()))
+                label="Select Position Script", command = lambda: PacManHndl.set_pos_script(tk.filedialog.askopenfilename()))
         self.help_menubar = tk.Menu(self.menubar,tearoff=0)
         self.help_menubar.add_command(
             label = "Open manual", command = "")
