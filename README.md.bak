@@ -20,7 +20,7 @@ tkinter/ttk
 # To use
 - Install with pip: pip install IPAM-PACMan
 - import pacman
-- PacMan_instance = pacman.PACMan()
+- PacMan_instance = pacman.PacMan()
 
 # Version history
 
