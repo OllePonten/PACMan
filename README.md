@@ -17,7 +17,27 @@ skimage
 tkinter/ttk
 
 
-version history
+# To use
+- Install with pip: pip install IPAM-PACMan
+- import pacman
+- PacMan_instance = pacman.PacMan()
+
+# Version history
+
+v 0.9.7 27/02/2023
+- Technical Debt
+	- Cleaning upp and testing installation file structure
+	- Bug fixes
+- Features
+	- Added PACSettings.ini: A settings file to tell PACMan what features to use, pointing it to the local ImagingWin installation, default output dir etc.
+
+v 0.9.5 25/01/2023
+- Technical debt
+	- Moved paths to ensure functionality after installation
+- GUI fixes
+	- Changed name of buttons to reflect functionality
+- Documentation
+	- Added error messages when PACMan cannot connect to stage
 
 v 0.9.3 22/09/2022
 - Created package 
