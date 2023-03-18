@@ -8,7 +8,6 @@ PACKAGE REQUIREMENTS:
 
 pyserial
 opencv
-pycromanager
 comtypes
 ctypes
 numpy
@@ -18,20 +17,24 @@ tkinter/ttk
 
 # REQUIREMENTS
 - ImagingWin v2.51 (see Installing ImagingWin)
-- Python 3.8
+- Python 3.9
 - Pip
 - Windows 7/8/10
 
 
-# Installing ImagingWin 
+# Installation of ImagingWin
 - Windows 10:
 The remote control functionality is only enabled in specifically the v 2.51 exe version of the ImagingWin program. 
 Due to this and ImagingWin supporting Windows 10 only on version >=2.56 the following steps must be taken to allow for remote control on Windows 10 systems: Install ImagingWin =2.56 as usual from Walz IMAGING-PAM download site. After installation: Make copy of the ImagingWin.exe file located in the installation folder. Overwrite the ImagingWin.exe in the installation folder with the v 2.51 exe provided with PACMan. 
 
-# To use
+# Installation and use of PACMan
 - Install with pip: pip install IPAM-PACMan
+
+In your python IDE of choice:
 - import pacman
 - PacMan_instance = pacman.PacMan()
+
+To change settings write pacman.open_settings()
 
 # Version history
 
