@@ -25,7 +25,7 @@ tkinter/ttk
 # Installation of ImagingWin 2.51
 - Windows 10:
 The remote control functionality is only enabled in specifically the v 2.51 exe version of the ImagingWin program. 
-Due to this and ImagingWin supporting Windows 10 only on version >=2.56 the following steps must be taken to allow for remote control on Windows 10 systems: Install ImagingWin =2.56 as usual from Walz IMAGING-PAM download site. After installation: Make copy of the ImagingWin.exe file located in the installation folder. Overwrite the ImagingWin.exe in the installation folder with the v 2.51 exe provided with PACMan. 
+Due to this and ImagingWin supporting Windows 10 only on version >=2.56 the following steps must be taken to allow for remote control on Windows 10 systems: Install ImagingWin =2.56 as usual from Walz IMAGING-PAM download site (https://www.walz.com/products/chl_p700/imaging-pam_ms/downloads.html). After installation: Make copy of the ImagingWin.exe file located in the installation folder. Overwrite the ImagingWin.exe in the installation folder with the v 2.51 exe provided with PACMan. 
 
 # Installation and use of PACMan
 - Install correct version of ImagingWin as above
@@ -34,8 +34,14 @@ Due to this and ImagingWin supporting Windows 10 only on version >=2.56 the foll
 In your python IDE of choice:
 - import pacman
 - PacMan_instance = pacman.PacMan()
+This starts PacMan with the GUI turned on, in standard mode.
+To start PacMan in CLI mode:
+- PacMan_instance = pacman.PacMan(False)
 
-To change settings write pacman.open_settings()
+To start PacMan in Debug mode:
+- PacMan_instance = pacman.PacMan(True/False,True)
+
+To change PACsettings write pacman.open_settings()
 
 # Version history
 
