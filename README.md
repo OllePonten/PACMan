@@ -45,7 +45,7 @@ To change PACsettings write pacman.open_settings()
 
 # Version history
 
-v 0.9.7 27/02/2023
+v 0.9.8 27/02/2023
 - Technical Debt
 	- Cleaning upp and testing installation file structure
 	- Bug fixes
