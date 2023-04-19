@@ -25,10 +25,10 @@ Contact: olle.ponten@gmail.com
 
 from dataclasses import dataclass
 
-from .managers import SCM
-from .managers import IRHM
-from .managers import pacmangui as pacmangui
-from .utils import utils
+from utils import utils
+from managers import SCM
+from managers import IRHM
+from managers import pacmangui as pacmangui
 import tifffile
 import skimage
 import skimage.io
@@ -68,10 +68,10 @@ class PacMan:
             print("Error when starting IRHM. Double check ImagingWin is running. Aborting")
             cleanup()
             sys.exit()
-        self.settings = utils.read_ini_file("PACSettings")
-        self.output_directory = self.settings['General']['OutputDir']
+        self.settings = utils.read_ini_file("PACSettings.ini")
+        self.output_directory = self.settings['General']['outputdir']
         try: 
-            if(self.settings['General']['SCMSerial']):   
+            if(self.settings['General']['scmserial']):   
                 self.StageCom = SCM.SC()
             else:
                 self.StageCom = PycroCom.PCMCom()
@@ -310,10 +310,10 @@ class PacMan:
         output_dir = self.output_directory
         lbls = self.StageCom.get_pos_lbls()
         for pos,data in enumerate(self.StageCom.Pos_List):
-            pos_fp = self.settings['General']['ImagingWinInstallDir'] + '\\Data_RGB\\' + self.IPam.Base_Filename.format(Exp = exp_name, lbl = lbls[pos]) + '.tif'
+            pos_fp = self.settings['General']['imagingwininstalldir'] + '\\Data_RGB\\' + self.IPam.Base_Filename.format(Exp = exp_name, lbl = lbls[pos]) + '.tif'
             #pos_coll = skimage.io.imread_collection(pos_fp,conserve_memory = True, plugin = 'tifffile')
             pos_img = skimage.io.imread(pos_fp,plugin = 'tifffile')
-            itr_fp = self.settings['General']['ImagingWinInstallDir'] + '\\Data_RGB\\' + self.IPam.Base_Filename.format(Exp = exp_name, lbl = lbls[pos]) + f"_T{itr_no}*.tif"
+            itr_fp = self.settings['General']['imagingwininstalldir'] + '\\Data_RGB\\' + self.IPam.Base_Filename.format(Exp = exp_name, lbl = lbls[pos]) + f"_T{itr_no}*.tif"
             itr_coll = skimage.io.imread_collection(itr_fp, conserve_memory = True, plugin = 'tifffile')
             pos_itr_imgs = itr_coll.concatenate()
             f_img = np.concatenate((pos_img, pos_itr_imgs), axis = 0)
@@ -434,11 +434,7 @@ def get_file_path():
     return output_dir
 
 
-
-    
-    
 if __name__ == '__main__':
-    from managers import pacmangui
-    pacmangui.start()
-    PCM = PacMan.PacMan()
+    PCM = PacMan(True)
+    #pacmangui.start(PCM)
     print("Exited")

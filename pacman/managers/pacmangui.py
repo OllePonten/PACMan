@@ -5,6 +5,10 @@
 #  in conjunction with Tcl version 8.6
 #    Mar 04, 2021 10:26:47 AM CET  platform: Windows NT
 
+
+import sys
+import os
+
 try:
     import Tkinter as tk
 except ImportError:
@@ -16,15 +20,18 @@ try:
 except ImportError:
     import tkinter.ttk as ttk
     py3 = True
-    
 import tkinter.filedialog
-import sys
-import os
+import tkinter.messagebox
+
+
 if __name__ == '__main__':
     import SCM
 else:
     from . import SCM
-import tkinter.messagebox
+import utils
+
+
+
 global ImagingWinPath
 ImagingWinPath = "C:/ImagingPamGigE/Data_RGB/"
 global int_var, rep_var, temp_sep_var, pos_var
@@ -39,6 +46,7 @@ def set_tk_var():
     temp_sep_var = tk.IntVar()
 
 def start(P_ptr = None):
+    global ImagingWinPath
     if(P_ptr is None):
         path = os.getcwd()+"..\\"
         sys.path.append(path)
@@ -46,6 +54,7 @@ def start(P_ptr = None):
         PCM = PacMan.PacMan()
     else:
         PCM = P_ptr 
+    ImagingWinPath = PCM.settings['General']['imagingwininstalldir']
     vp_start_gui(PCM)
     PCM.IPam.load_acquisition_script()
     PCM.IPam.load_start_script()
@@ -75,7 +84,7 @@ def load_AF():
         minCirc = float(window.minCirc_ent.get())
         minInert = float(window.minInert_ent.get())
         sizes = window.size_ent.get().split(',')
-        PacMan.logmsg(f"Autofocus parameters changed to: {[Threshold,Strength,minCirc,minInert,int(sizes[0]),int(sizes[1])]}")
+        utils.logmsg(f"Autofocus parameters changed to: {[Threshold,Strength,minCirc,minInert,int(sizes[0]),int(sizes[1])]}")
     except:
         print("One of the autofocus value was not correctly formmated")
     
@@ -129,11 +138,11 @@ def send_serial_command():
    window.ser_com_var.set("")
    #w.ser_com_ent.set("")
    if("log:" in msg[0:5]):
-       PacMan.logmsg(msg)
+       utils.logmsg(msg)
    elif("Queue:" in msg[0:6]):
        timer_cmd = msg[6:]
        try:
-           PacMan.logmsg(f"Queing following command:{timer_cmd}")
+           utils.logmsg(f"Queing following command:{timer_cmd}")
            PacManHndl.queue_command(timer_cmd)
        except Exception as e:
            exception_handler(e)
@@ -146,7 +155,7 @@ def send_serial_command():
        prior_cmd = msg[6:]
        print(f"Sending Manual Serial Command:{prior_cmd}")
        try:
-           PacMan.logmsg(PacManHndl.StageCom.msg_resp(prior_cmd))
+           utils.logmsg(PacManHndl.StageCom.msg_resp(prior_cmd))
        except Exception as e:
            exception_handler(e)
 
@@ -272,7 +281,7 @@ class MainWnd(tk.Toplevel):
         self.main_tab = ttk.Frame(self.tabControl)
         self.tabControl.add(self.main_tab,text="Main")
         self.autofocus_tab = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.autofocus_tab, text = "Autofocus",state="disabled")
+        #self.tabControl.add(self.autofocus_tab, text = "Autofocus",state="disabled")
         self.positions_tab = ttk.Frame(self.tabControl)
         self.tabControl.add(self.positions_tab, text = "Positions")
         
@@ -313,11 +322,6 @@ class MainWnd(tk.Toplevel):
         self.pos_lbl.place(relx=baserelx, rely=0, height=20, width=300)
         self.pos_lbl.configure(bg="#f9f9f9")
         self.pos_lbl.configure(fg="black")
-        # self.pos_lbl.configure(background="#d9d9d9")
-        # self.pos_lbl.configure(disabledforeground="#a3a3a3")
-        # self.pos_lbl.configure(foreground="#000000")
-        # self.pos_lbl.configure(highlightbackground="#d9d9d9")
-        # self.pos_lbl.configure(highlightcolor="black")
         self.pos_lbl.configure(text ="X:      Y:      Z:      Name: ")
         
         self.go_to_btn = tk.Button(self.positions_tab)

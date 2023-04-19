@@ -201,7 +201,7 @@ class AIPam:
             if(strout):
                 return ret
             
-        def load_acquisition_script(self, fn = 'PerPosScript.txt'):
+        def load_acquisition_script(self, fn = 'managers/PerPosScript.txt'):
             self.Command_Queue.clear()
             with open(fn) as script_file:
                 for line in script_file:
@@ -216,7 +216,7 @@ class AIPam:
             self.Command_Queue.clear()
             self.Start_Command_Queue.clear()
             
-        def load_start_script(self, fn = 'StartPosScript.txt'):
+        def load_start_script(self, fn = 'managers/StartPosScript.txt'):
             self.Start_Command_Queue.clear()
             with open(fn) as script_file:
                 for line in script_file:

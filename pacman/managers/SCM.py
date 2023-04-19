@@ -15,7 +15,10 @@ import sys
 import re
 
 #local imports
-from ..utils import utils
+if __name__ == '__main__':
+    from utils import utils
+else:    
+    from utils import utils
 
 global ser,COMPORT, resolution
 resolution = 0.1
