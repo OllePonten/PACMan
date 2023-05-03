@@ -36,6 +36,8 @@ import os, time, sys
 import matplotlib
 matplotlib.use("Qt5Agg")
 import numpy as np
+import psutil
+
 global gui_ptr
 
 global DEBUG
@@ -68,7 +70,22 @@ class PacMan:
             print("Error when starting IRHM. Double check ImagingWin is running. Aborting")
             cleanup()
             sys.exit()
+            
         self.settings = utils.read_ini_file("PACSettings.ini")
+        if(self.settings['General']['imagingwininstalldir'] == "Default"):
+            processes = dict()
+            for proc in psutil.process_iter():
+                try:
+                    # Get process name & pid from process object.
+                    processName = proc.name()
+                    processID = proc.pid
+                    processes[processName] = processID
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    pass
+            if('ImagingWin.exe' in processes.keys()):
+                pid = processes['ImagingWin.exe']
+                self.settings['General']['imagingwininstalldir'] = psutil.Process(pid).exe()
+            utils.logmsg(f"Default install directory extracted from current exe: {self.settings['General']['imagingwininstalldir']}")
         self.output_directory = self.settings['General']['outputdir']
         try: 
             if(self.settings['General']['scmserial']):   
@@ -429,10 +446,6 @@ def cleanup():
     if('ImagingWin.exe' in processes.keys()):
         os.kill(processes['ImagingWin.exe'],9)
     cv2.destroyAllWindows() 
-
-def get_file_path():
-    return output_dir
-
 
 if __name__ == '__main__':
     PCM = PacMan(True)

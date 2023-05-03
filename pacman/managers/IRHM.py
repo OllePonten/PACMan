@@ -78,6 +78,7 @@ import comtypes
 import ctypes
 import collections
 import psutil
+import os
 
 DEBUG = False
 
@@ -201,8 +202,10 @@ class AIPam:
             if(strout):
                 return ret
             
-        def load_acquisition_script(self, fn = 'managers/PerPosScript.txt'):
+        def load_acquisition_script(self, fn = 'PerPosScript.txt'):
             self.Command_Queue.clear()
+            if("/" not in fn):
+                fn = os.path.join(os.path.split(__file__)[0],fn)
             with open(fn) as script_file:
                 for line in script_file:
                     read_cmd = line.split(",")
@@ -216,8 +219,10 @@ class AIPam:
             self.Command_Queue.clear()
             self.Start_Command_Queue.clear()
             
-        def load_start_script(self, fn = 'managers/StartPosScript.txt'):
+        def load_start_script(self, fn = 'StartPosScript.txt'):
             self.Start_Command_Queue.clear()
+            if("/" not in fn):
+                fn = os.path.join(os.path.split(__file__)[0],fn)
             with open(fn) as script_file:
                 for line in script_file:
                     read_cmd = line.split(",")

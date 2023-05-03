@@ -29,7 +29,7 @@ def logmsg(msg, toFile = False, toGUI = True):
     global msgbuffer, output_dir, experiment    
     if(toGUI):
         guibuffer.append(msg)
-    T = datetime.now().strftime("%d/%m (%H:%M:%S)")
+    T = datetime.datetime.now().strftime("%d/%m (%H:%M:%S)")
     frmstr = f"T:{T}: {msg}"
     if(toFile):
         msgbuffer.append(frmstr)
@@ -42,6 +42,7 @@ def logmsg(msg, toFile = False, toGUI = True):
         msgbuffer.clear()
 
 def read_ini_file(file_path):
+    file_path = os.path.join(os.path.split(__file__)[0],"PACsettings.ini")
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"The PACsettings {file_path} was not found.")
     config = configparser.ConfigParser()
